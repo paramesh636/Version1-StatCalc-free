@@ -1,0 +1,278 @@
+body{
+		display: flex;
+		flex-direction: column;
+		justify-content: space-evenly;
+		align-items: center;
+	}
+
+	.container{
+		margin-top: 4em;
+		height: 26em;
+		width: 80%;
+		min-width: 360px;
+		max-width: 500px;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-evenly;
+		align-items: center;
+		padding: 1em 1em 1em 1em;
+		transition: all 0.3s ease;
+	}
+
+	.container h2,h1{
+		text-align: center;
+		font-family: monospace;
+		padding: 0;
+		margin: 0;
+		margin-bottom: 1em;
+	}
+	.container h2{
+		margin-bottom: 2em;
+	}
+
+	.container label{
+		height: 2.5em;
+		border-radius: 10px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		font-weight: bold;
+		font-family: sans-serif;
+		background-color: rgb(10,100,255);
+		color: white;
+	}
+
+	.container p{
+		height: 30px;
+		width: 100%;
+		font-size: 2em;
+		text-align: center;
+		color: black;
+		margin-bottom: 20px;
+	}
+
+	.container input{
+		margin-left: 10px;
+		margin-bottom: 30px;
+		padding-left: 10px;
+		height: 3em;
+		width: 80%;
+		border: none;
+		outline: none;
+		border-radius: 14px;
+		box-shadow: 0 2px 5px grey;
+		font-size: 1em;
+		transition: all 0.2s ease;
+	}
+
+	.container input:focus{
+		background-color: rgb(230,230,230);
+		box-shadow: 0 5px 5px grey;
+	}
+
+	.container input::placeholder{
+		color: black;
+	}
+
+	.container button{
+		height: 50px;
+		width: 40%;
+		border: none;
+		padding: 0;
+		border-radius: 14px;
+		background-color: rgb(10,100,255);
+		color: white;
+		font-weight: bold;
+		font-size: 20px;
+		font-family: sans-serif;
+		box-shadow: 0 0 5px black;
+	}
+
+	.container button:hover{
+		cursor: pointer;
+		background-color: rgb(100,100,255);
+	}
+
+	.container button:active{
+		background-color: white;
+		color: black;
+	}
+
+
+	.row{
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+
+	.graph{
+		height: 24em;
+		width: 80%;
+		min-width: 360px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		margin-bottom: 2em;
+	}
+
+	label{
+		padding: 5px;
+		width: 5em;
+		
+	}
+
+	.answer{
+		height: 30px;
+		width: 100%;
+		font-size: 2em;
+		text-align: center;
+		color: black;
+		padding: 0 0 100px 0;
+	}
+
+	#steps{
+		display: none;
+		height: 30px;
+		width: 100px;
+		font-size: 1em;
+		font-family: monospace;
+		text-align: center;
+		color: black;
+		background-color: transparent;
+		border: none;
+		border-color: transparent;
+	}
+
+	#steps:hover{
+		text-decoration: underline;
+		cursor: pointer;
+	}
+
+	.steps-container{
+		font-family: monospace;
+		font-size: 1.1em;
+		padding: 100px;
+		padding-top: 0px;
+	}
+
+	.deviation-table{
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 1.5em;
+	margin-bottom: 2em;
+	font-size: 1.05em;
+	background: white;
+}
+
+.deviation-table th,
+.deviation-table td{
+	border: 1px solid #ccc;
+	padding: 12px;
+	text-align: center;
+}
+
+.deviation-table th{
+	background: #e8e8e8;
+	font-weight: bold;
+}
+
+.deviation-table tr:nth-child(even){
+	background: #f9f9f9;
+}
+
+.sum-row{
+	background: #eef5ff !important;
+	font-weight: bold;
+}
+
+.row select{
+	position: relative;
+	width: 80%;
+	height: 3em;
+	background-color: transparent;
+	margin-bottom: 30px;
+	margin-left: 10px;
+	padding-left: 10px;
+	padding-right: 100px;
+	border: none;
+	border-radius: 1.5em;
+	box-shadow: 0 2px 5px grey;
+	font-size: 1em;
+}
+
+.row select:hover{
+	background-color: rgb(240,240,240);
+	cursor: pointer;
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 999px;
+}
+
+.row span{
+
+	display: inline-block;
+	width: 50px;
+	text-align: right;
+}
+
+.head {
+
+	position: relative;
+	display: flex;
+	width: 50%;
+	flex-direction: row;
+	align-items: bottom;
+	justify-content: space-evenly;
+}
+
+#info:hover{
+	cursor: pointer;
+}
+
+#infoBox{
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 280px;
+    padding: 15px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+
+    transform: scaleY(0);
+
+    transform-origin: top center;
+
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        visibility 0.2s;
+}
+
+#infoBox.show{
+    opacity: 1;
+    visibility: visible;
+
+    transform: scaleY(1);
+}
+
+#infoBox h3{
+    margin-top: 0;
+}
+
+
+

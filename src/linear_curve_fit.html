@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Statistics Calculator</title>
+	<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  	<script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  	</script>
+	<script src="statscalc.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+</head>
+
+
+<body>
+
+	<div class="container">
+		
+		<div class="head">
+			<h1>Linear Regression</h1>
+			<i class="fa-regular fa-circle-question" id="info"></i>
+			<div id="infoBox"></div>
+		</div>
+		<h2>\[y = ax + b\]</h2>
+		<div class="row">
+			<label>X:</label>
+			<input type="text" name="x" id="x" placeholder="Enter Data" required>
+		</div>
+		<div class="row">
+			<label>Y:</label>
+			<input type="text" name="y" id="y" placeholder="Enter Data" required>
+		</div>
+		<button id="calculate">Calculate</button>
+	</div>
+
+	<p class="answer" id="answer"></p>
+
+
+	<div class="graph">
+		<canvas id="myChart"></canvas>
+	</div>
+
+	<button id="steps">Show Steps</button>
+	<p id="ansSteps"></p>
+
+	<script>
+
+		let x = document.getElementById("x");
+		let y = document.getElementById("y");
+		let submit = document.getElementById("calculate");
+		let result = document.getElementById("answer");
+		let steps = document.getElementById("steps");
+		let ansSteps = document.getElementById("ansSteps");
+		let my_chart = null;
+		let steps_html;
+		const info = document.getElementById("info");
+		const infoBox = document.getElementById('infoBox');
+		let hoverTimer;
+		const desc =  `
+			        <h3>Linear Regression</h3>
+
+					<h4>
+					    Models the relationship between two variables by fitting a straight line that best predicts one variable from the other.
+					</h4>
+					<ul>
+					    <li>
+					        <b>Regression Line</b> → Represents the line of best fit through the data points and is typically written as <b>y = ax + b</b>, where <b>a</b> is the slope and <b>b</b> is the intercept.
+					    </li>
+					    <li>
+					        <b>Slope (a)</b> → Indicates how much the predicted value of <b>y</b> changes for a one-unit increase in <b>x</b>. A positive slope indicates an increasing relationship, while a negative slope indicates a decreasing relationship.
+					    </li>
+					    <li>
+					        <b>Intercept (b)</b> → Represents the predicted value of <b>y</b> when <b>x = 0</b>.
+					    </li>
+					    <li>
+					        <b>Prediction</b> → The regression equation can be used to estimate the value of <b>y</b> for a given value of <b>x</b>.
+					    </li>
+					    <li>
+					        <b>Good Fit</b> → When data points lie close to the regression line, the model provides more accurate predictions.
+					    </li>
+					</ul>
+			    `;
+
+		function showInfo(){
+			infoBox.innerHTML = desc;
+			infoBox.classList.add("show");
+		}
+		function hideInfo(){
+			infoBox.innerHTML = "";
+			infoBox.classList.remove("show");
+
+		}
+
+		info.addEventListener("mouseenter",()=>{
+
+			hoverTimer = setTimeout(()=>{
+				showInfo();
+			},1000);
+		});
+
+		info.addEventListener("mouseleave",()=>{
+
+			clearTimeout(hoverTimer);
+		});
+
+		info.addEventListener("click",(e)=>{
+
+			e.stopPropagation();
+
+			if(infoBox.classList.contains("show")){
+				hideInfo();
+			}else{
+				showInfo();
+			}
+		});
+
+		infoBox.addEventListener("mouseenter", () => {
+		    clearTimeout(hoverTimer);
+		});
+
+		infoBox.addEventListener("mouseleave", () => {
+		    hideInfo();
+		});
+
+		document.addEventListener("click", () => {
+		    hideInfo();
+		});
+
+		submit.addEventListener("click",()=>{
+
+			ansSteps.innerHTML = ' ';
+
+			if(my_chart){
+				my_chart.destroy();
+			}
+
+			let data_x;
+			let data_y;
+			
+			try{
+
+				if(x.value.trim() === "" || y.value.trim() === ""){
+				    throw "Please enter some data.";
+				}
+
+			    data_x = x.value.trim().split(/[\s,]+/).map(Number);
+			    data_y = y.value.trim().split(/[\s,]+/).map(Number);
+
+			    if(data_x.some(Number.isNaN) || data_y.some(Number.isNaN)){
+			        throw "Only numerical values are allowed.";
+			    }
+
+			    if(data_x.length !== data_y.length){
+			        throw "Both datasets must contain the same number of values.";
+			    }
+
+			}catch(error){
+
+			    alert(error);
+			    return;
+
+			}
+
+			let constants = curve_fit_linear(data_x,data_y);
+			let a = Math.round(constants[0][1][0]*100000)/100000;
+			let b = Math.round(constants[0][0][0]*100000)/100000;
+			let n = constants[1];
+			let sum_x = constants[2];
+			let sum_y = constants[3];
+			let sum_x2 = constants[4];
+			let sum_xy = constants[5];
+			let x2 = constants[6];
+			let xy = constants[7];
+			result.innerHTML = `\\[y = ${a}x + ${b}\\]`;
+			MathJax.typesetPromise();
+
+			let data_xy = data_x.map((x,i)=>({x: x,y: data_y[i]}));
+			let dataset = [];
+
+			for(let i = 0;i < data_x.length;i++){
+				let ans = a*data_x[i] + b;
+				dataset[i] = ans;
+			}
+
+			steps.style.display = 'block';
+
+			my_chart = new Chart("myChart",{
+				type: "scatter",
+				data: {
+					labels: data_x,
+					datasets: [{
+						type: "line",
+						label: "Regression Line",
+						data: dataset,
+						backgroundColor: "blue",
+						borderColor: "blue",
+						pointRadius: 0.5,
+						lineTension: 0.4
+
+					},
+					{
+						type: "scatter",
+						label: "Raw Data",
+						data: data_xy,
+						backgroundColor: "green",
+						borderColor: "green",
+					}]
+				}
+			});
+
+			steps_html = `
+					<div class="steps-container">
+
+						<h2>Linear Regression using Least Squares Method</h2>
+
+						<p>
+							We fit a straight line of the form:
+						</p>
+
+						<p>
+							\\[
+							y = ax + b
+							\\]
+						</p>
+
+						<h3>Step 1: Normal Equations</h3>
+
+						<p>
+							The least squares method gives the following normal equations:
+						</p>
+
+						<p>
+							\\[
+							\\sum y = a\\sum x + nb
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum xy = a\\sum x^2 + b\\sum x
+							\\]
+						</p>
+
+						<h3>Step 2: Construct the Computation Table</h3>
+
+						<table class="deviation-table">
+
+							<tr>
+								<th>\\(x\\)</th>
+								<th>\\(y\\)</th>
+								<th>\\(x^2\\)</th>
+								<th>\\(xy\\)</th>
+							</tr>
+
+							${data_x.map((xVal,i)=>{
+
+								return `
+									<tr>
+										<td>${xVal}</td>
+										<td>${data_y[i]}</td>
+										<td>${x2[i]}</td>
+										<td>${xy[i]}</td>
+									</tr>
+								`;
+
+							}).join('')}
+
+							<tr class="sum-row">
+								<td><b>${sum_x}</b></td>
+								<td><b>${sum_y}</b></td>
+								<td><b>${sum_x2}</b></td>
+								<td><b>${sum_xy}</b></td>
+							</tr>
+
+						</table>
+
+						<h3>Step 3: Required Constants</h3>
+
+						<p>
+							\\[
+							n = ${n}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum x = ${sum_x}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum y = ${sum_y}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum x^2 = ${sum_x2}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum xy = ${sum_xy}
+							\\]
+						</p>
+
+						<h3>Step 4: Substitute into the Normal Equations</h3>
+
+						<p>
+							First Equation:
+						</p>
+
+						<p>
+							\\[
+							${sum_y}
+							=
+							a(${sum_x})
+							+
+							${n}b
+							\\]
+						</p>
+
+						<p>
+							Second Equation:
+						</p>
+
+						<p>
+							\\[
+							${sum_xy}
+							=
+							a(${sum_x2})
+							+
+							b(${sum_x})
+							\\]
+						</p>
+
+						<h3>Step 5: Solve the Equations</h3>
+
+						<p>
+							After solving the simultaneous equations:
+						</p>
+
+						<p>
+							\\[
+							a = ${a}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							b = ${b}
+							\\]
+						</p>
+
+						<h3>Final Regression Equation</h3>
+
+						<p style="font-size:1.5em; font-weight:bold;">
+							\\[
+							y = ${a}x + ${b}
+							\\]
+						</p>
+
+					</div>
+				`;
+
+		});
+
+		steps.addEventListener("click",()=>{
+
+			if(steps.textContent == "Show Steps"){
+
+				ansSteps.innerHTML = steps_html;
+				MathJax.typesetPromise();
+				steps.textContent = "Hide Steps";
+			}else if(steps.textContent == "Hide Steps"){
+
+				ansSteps.innerHTML = ' ';
+				steps.textContent = "Show Steps";
+			}
+		});
+
+
+
+	</script>
+</body>
+</html>

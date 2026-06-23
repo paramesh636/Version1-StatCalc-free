@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Statistics Calculator</title>
+	<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+  	<script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  	</script>
+  	<script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+	<script src="statscalc.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+<body>
+
+	<div class="container" style="height: 600px;">
+		
+		<div class="head">
+			<h1>Binomial Distribution</h1>
+			<i class="fa-regular fa-circle-question" id="info"></i>
+			<div id="infoBox"></div>
+		</div>
+		<h2>The distribution of successes.</h2>
+		<div class="row">
+			<label>P:</label>
+			<input type="text" name="m" id="p" placeholder="Enter Probability of Success" required>
+		</div>
+		<div class="row">
+			<label>N:</label>
+			<input type="text" name="y" id="n" placeholder="Enter No of Trials" required>
+		</div>
+		<div class="row">
+			<label>Type:</label>
+			<select name="Choose Type" id="select">
+				<option value="less">P(X < x)</option>
+				<option value="more">P(X > x)</option>
+				<option value="between">P(a < X < b)</option>
+				<option value="equal">P(X = x)</option>
+			</select>
+		</div>
+		<div class="row">
+			<label>X:</label>
+			<input type="text" name="x" id="x" placeholder="Enter X value" required>
+
+		</div>
+		<button id="calculate">Generate</button>
+	</div>
+
+	<p id="answer"></p>
+
+
+	<div class="graph">
+		<canvas id="myChart"></canvas>
+	</div>
+
+	<button id="steps">Show Steps</button>
+	<p id="ansSteps"></p>
+
+	<script>
+		
+		let x = document.getElementById("x");
+		let no = document.getElementById("n");
+		let prob = document.getElementById("p");
+		let submit = document.getElementById("calculate");
+		let result = document.getElementById("answer");
+		let steps = document.getElementById("steps");
+		let ansSteps = document.getElementById("ansSteps");
+		let my_chart = null;
+		let options = document.getElementById("select");
+		let steps_html;
+		const info = document.getElementById("info");
+		const infoBox = document.getElementById('infoBox');
+		let hoverTimer;
+		const desc =  `
+			        <h3>Binomial Distribution</h3>
+					<h4>
+					    A probability distribution that models the number of successes in a fixed number of independent trials.
+					</h4>
+					<ul>
+					    <li>
+					        <b>Number of Trials (n)</b> → The total number of times an experiment is repeated.
+					    </li>
+					    <li>
+					        <b>Probability of Success (p)</b> → The chance of success on a single trial.
+					    </li>
+					    <li>
+					        <b>Random Variable (X)</b> → Represents the number of successes observed in the <b>n</b> trials.
+					    </li>
+					    <li>
+					        <b>Requirements</b> → Trials must be independent, have only two outcomes (success or failure), and use the same probability of success.
+					    </li>
+					    <li>
+					        It is commonly used for coin tosses, quality control, surveys, and other yes/no experiments.
+					    </li>
+					</ul>
+			    `;
+
+		function showInfo(){
+			infoBox.innerHTML = desc;
+			infoBox.classList.add("show");
+		}
+		function hideInfo(){
+			infoBox.innerHTML = "";
+			infoBox.classList.remove("show");
+
+		}
+
+		info.addEventListener("mouseenter",()=>{
+
+			hoverTimer = setTimeout(()=>{
+				showInfo();
+			},1000);
+		});
+
+		info.addEventListener("mouseleave",()=>{
+
+			clearTimeout(hoverTimer);
+		});
+
+		info.addEventListener("click",(e)=>{
+
+			e.stopPropagation();
+
+			if(infoBox.classList.contains("show")){
+				hideInfo();
+			}else{
+				showInfo();
+			}
+		});
+
+		infoBox.addEventListener("mouseenter", () => {
+		    clearTimeout(hoverTimer);
+		});
+
+		infoBox.addEventListener("mouseleave", () => {
+		    hideInfo();
+		});
+
+		document.addEventListener("click", () => {
+		    hideInfo();
+		});
+
+		options.addEventListener("click",()=>{
+			if(options.value == 'between'){
+				x.placeholder = "Enter values of a and b";
+			}
+		});
+
+
+		submit.addEventListener("click",()=>{
+
+			ansSteps.innerHTML = ' ';
+			steps.textContent = "Show Steps";
+
+			if(my_chart){
+				my_chart.destroy();
+			}
+
+			let val;
+			let n;
+			let p;
+			let ans1;
+			let ans2;
+			
+
+			try{
+
+				if(no.value.trim() === "" || prob.value.trim() === "" || x.value.trim() === ""){
+				    throw "Please enter some data.";
+				}
+
+			    x_value = x.value.trim().split(/[\s,]+/).map(Number);
+			    n_value = no.value.trim().split(/[\s,]+/).map(Number);
+			    p_value = prob.value.trim().split(/[\s,]+/).map(Number);
+
+
+			    if(x_value.length > 1){
+			    	if(options.value == 'between'){
+				    	if(x_value.length != 2){
+				    		throw "Only two X values allowed."
+				    	}
+				    }else{ 
+			    		throw "Only one X value allowed."
+			    	}
+			    }
+
+			    if(x_value.length == 1 && options.value == 'between'){
+
+			    	throw "Two X values are required."
+			    }
+			 
+			
+			    if(n_value.length > 1){
+			    	throw "Only one n value allowed."
+			    }
+			    if(p_value.length > 1){
+			    	throw "Only one p value allowed."
+			    }
+
+			    if(x_value.some(Number.isNaN) || Number.isNaN(Number(no.value)) || Number.isNaN(Number(prob.value))){
+			        throw "Only numerical values are allowed.";
+			    }
+
+			}catch(error){
+
+			    alert(error);
+			    return;
+
+			}
+			n = n_value[0];
+			p = p_value[0];
+			let mean = n * p;
+			let sd = (Math.sqrt(mean * (1 - p))).toFixed(5);
+
+			if(options.value == 'less'){
+
+				val = x_value[0];
+				let i = 0;
+				ans1 = 0;
+				console.log(val,n,p);
+				while(i < val){
+
+					ans1 = ans1 + parseFloat((binomial_dist(n,p,i)).toFixed(5));
+					i++;
+				}
+				ans2 = ans1 + parseFloat((binomial_dist(n,p,val)).toFixed(5));
+
+				result.innerHTML = `
+					<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>P(X < x)</span><span>:</span><span>${ans1}</span>
+						<span>P(X ≤ x)</span><span>:</span><span>${ans2}</span>
+						<span>Mean</span><span>:</span><span>${mean}</span>
+						<span>Standard Deviation</span><span>:</span><span>${sd}</span>
+					</div>
+				`;
+
+				steps_html = `
+					<div class="steps-container">
+
+						<h2>Binomial Distribution: Left Tail</h2>
+
+						<p>
+							Find:
+						</p>
+
+						<p>
+							\\[
+							P(X < ${val})
+							\\]
+						</p>
+
+						<h3>Step 1: Binomial Formula</h3>
+
+						<p>
+							\\[
+							P(X=x)
+							=
+							{n \\choose x}
+							p^x
+							(1-p)^{n-x}
+							\\]
+						</p>
+
+						<h3>Step 2: Parameters</h3>
+
+						<p>\\[n = ${n}\\]</p>
+						<p>\\[p = ${p}\\]</p>
+
+						<p>\\[
+						\\mu = np = ${mean}
+						\\]</p>
+
+						<p>\\[
+						\\sigma = \\sqrt{np(1-p)}
+						=
+						${sd}
+						\\]</p>
+
+						<h3>Step 3: Add Probabilities Below ${val}</h3>
+
+						<p>
+							\\[
+							P(X < ${val})
+							=
+							P(0)+P(1)+\\cdots+P(${val-1})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P(X < ${val})
+							=
+							${ans1}
+							\\]
+						</p>
+
+						<h3>Step 4: Include X = ${val}</h3>
+
+						<p>
+							\\[
+							P(X \\le ${val})
+							=
+							P(X < ${val})
+							+
+							P(X=${val})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P(X \\le ${val})
+							=
+							${ans2}
+							\\]
+						</p>
+
+					</div>
+					`;
+
+			}else if(options.value == 'more'){
+
+				val = x_value[0];
+				let i = val + 1;
+				ans1 = 0;
+				while(i <= n){
+
+					ans1 = ans1 + parseFloat((binomial_dist(n,p,i)).toFixed(5));
+					i++;
+				}
+				ans2 = ans1 + parseFloat((binomial_dist(n,p,val)).toFixed(5));
+
+				result.innerHTML = `
+					<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>P(X > x)</span><span>:</span><span>${ans1}</span>
+						<span>P(X ≥ x)</span><span>:</span><span>${ans2}</span>
+						<span>Mean</span><span>:</span><span>${mean}</span>
+						<span>Standard Deviation</span><span>:</span><span>${sd}</span>
+					</div>
+				`;
+
+				steps_html = `
+					<div class="steps-container">
+
+						<h2>Binomial Distribution: Right Tail</h2>
+
+						<p>
+							Find:
+						</p>
+
+						<p>
+							\\[
+							P(X > ${val})
+							\\]
+						</p>
+
+						<h3>Step 1: Binomial Formula</h3>
+
+						<p>
+							\\[
+							P(X=x)
+							=
+							{n \\choose x}
+							p^x
+							(1-p)^{n-x}
+							\\]
+						</p>
+
+						<h3>Step 2: Parameters</h3>
+
+						<p>\\[n = ${n}\\]</p>
+						<p>\\[p = ${p}\\]</p>
+
+						<p>\\[
+						\\mu = ${mean}
+						\\]</p>
+
+						<p>\\[
+						\\sigma = ${sd}
+						\\]</p>
+
+						<h3>Step 3: Add Probabilities Above ${val}</h3>
+
+						<p>
+							\\[
+							P(X > ${val})
+							=
+							P(${val+1})
+							+
+							\\cdots
+							+
+							P(${n})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P(X > ${val})
+							=
+							${ans1}
+							\\]
+						</p>
+
+						<h3>Step 4: Include X = ${val}</h3>
+
+						<p>
+							\\[
+							P(X \\ge ${val})
+							=
+							P(X > ${val})
+							+
+							P(X=${val})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P(X \\ge ${val})
+							=
+							${ans2}
+							\\]
+						</p>
+
+					</div>
+					`;
+			}else if(options.value == 'between'){
+
+				
+				let val1 = x_value[0];
+				let val2 = x_value[1];
+				let i = val1 + 1;
+				ans1 = 0;
+				while(i < val2){
+
+					ans1 = ans1 + parseFloat((binomial_dist(n,p,i)).toFixed(5));
+					i++;
+				}
+				ans2 = ans1 + parseFloat((binomial_dist(n,p,val1)).toFixed(5)) + parseFloat((binomial_dist(n,p,val2)).toFixed(5));
+
+				result.innerHTML = `
+					<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>P(a < X < b)</span><span>:</span><span>${ans1}</span>
+						<span>P(a ≤ X ≤ b)</span><span>:</span><span>${ans2}</span>
+						<span>Mean</span><span>:</span><span>${mean}</span>
+						<span>Standard Deviation</span><span>:</span><span>${sd}</span>
+					</div>
+				`;
+
+				steps_html = `
+					<div class="steps-container">
+
+						<h2>Binomial Distribution: Between Two Values</h2>
+
+						<p>
+							Find:
+						</p>
+
+						<p>
+							\\[
+							P(${val1} < X < ${val2})
+							\\]
+						</p>
+
+						<h3>Step 1: Binomial Formula</h3>
+
+						<p>
+							\\[
+							P(X=x)
+							=
+							{n \\choose x}
+							p^x
+							(1-p)^{n-x}
+							\\]
+						</p>
+
+						<h3>Step 2: Parameters</h3>
+
+						<p>\\[n = ${n}\\]</p>
+						<p>\\[p = ${p}\\]</p>
+
+						<p>
+							\\[
+							\\mu = ${mean}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sigma = ${sd}
+							\\]
+						</p>
+
+						<h3>Step 3: Add Probabilities Between the Bounds</h3>
+
+						<p>
+							\\[
+							P(${val1} < X < ${val2})
+							=
+							P(${val1 + 1})
+							+
+							\\cdots
+							+
+							P(${val2 - 1})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P(${val1} < X < ${val2})
+							=
+							${ans1}
+							\\]
+						</p>
+
+						<h3>Step 4: Include the Endpoints</h3>
+
+						<p>
+							\\[
+							P(${val1} \\le X \\le ${val2})
+							=
+							P(${val1} < X < ${val2})
+							+
+							P(X=${val1})
+							+
+							P(X=${val2})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P(${val1} \\le X \\le ${val2})
+							=
+							${ans2}
+							\\]
+						</p>
+
+					</div>
+					`;
+			}else if(options.value == 'equal'){
+
+				val = x_value[0];
+				ans1 = parseFloat(binomial_dist(n,p,val).toFixed(5));
+				result.innerHTML = `
+					<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>P(X = x)</span><span>:</span><span>${ans1}</span>
+						<span>Mean</span><span>:</span><span>${mean}</span>
+						<span>Standard Deviation</span><span>:</span><span>${sd}</span>
+					</div>
+				`;
+
+				steps_html = `
+					<div class="steps-container">
+
+						<h2>Exact Binomial Probability</h2>
+
+						<p>
+							Find:
+						</p>
+
+						<p>
+							\\[
+							P(X=${val})
+							\\]
+						</p>
+
+						<h3>Step 1: Binomial Formula</h3>
+
+						<p>
+							\\[
+							P(X=x)
+							=
+							{n \\choose x}
+							p^x
+							(1-p)^{n-x}
+							\\]
+						</p>
+
+						<h3>Step 2: Substitute Values</h3>
+
+						<p>
+							\\[
+							n=${n}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							p=${p}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							x=${val}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P(X=${val})
+							=
+							{${n} \\choose ${val}}
+							(${p})^{${val}}
+							(1-${p})^{${n-val}}
+							\\]
+						</p>
+
+						<h3>Step 3: Evaluate</h3>
+
+						<p>
+							\\[
+							P(X=${val})
+							=
+							${ans1}
+							\\]
+						</p>
+
+						<h3>Distribution Properties</h3>
+
+						<p>
+							\\[
+							\\mu = np = ${mean}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sigma = \\sqrt{np(1-p)}
+							=
+							${sd}
+							\\]
+						</p>
+
+					</div>
+					`;
+
+			}
+
+			let dataset = [];
+			let label = [];
+			for(let i = 0;i <= n;i++){
+				label.push(i);
+				dataset.push(parseFloat(binomial_dist(n,p,i)));
+			}
+		
+		my_chart = new Chart("myChart",{
+
+			type: 'bar',
+			data: {
+				labels: label,
+				datasets:[{
+					label: "Probability",
+					data: dataset,
+					backgroundColor: 'rgb(10,100,255)'
+
+				}]
+			}
+		});
+
+		steps.style.display = "block";
+
+	});
+
+	steps.addEventListener("click",()=>{
+
+			if(steps.textContent == "Show Steps"){
+
+				ansSteps.innerHTML = steps_html;
+				MathJax.typesetPromise();
+				steps.textContent = "Hide Steps";
+			}else if(steps.textContent == "Hide Steps"){
+				ansSteps.innerHTML = ' ';
+				steps.textContent = "Show Steps";
+			}
+
+		});
+
+
+
+
+	</script>
+</body>
+</html>

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Statistics Calculator</title>
+	<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.4.1/build/index.umd.min.js"></script>
+  	<script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  	</script>
+	<script src="statscalc.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+<body>
+
+	<div class="container">
+		
+		<div class="head">
+			<h1>Q1,Q2,Q3 and IQR</h1>
+			<i class="fa-regular fa-circle-question" id="info"></i>
+			<div id="infoBox"></div>
+		</div>
+		<h2>Visualize the Normal spread of your Data</h2>
+		
+		<div class="row">
+			<label>Data:</label>
+			<input type="text" name="y" id="y" placeholder="Enter Data" required>
+		</div>
+		<button id="calculate">Generate</button>
+	</div>
+
+	<p id="answer"></p>
+
+
+	<div class="graph">
+		<canvas id="myChart"></canvas>
+	</div>
+
+	<button id="steps">Show Steps</button>
+	<p id="ansSteps"></p>
+
+	<script>
+		
+		let y = document.getElementById("y");
+		let submit = document.getElementById("calculate");
+		let result = document.getElementById("answer");
+		let steps = document.getElementById("steps");
+		let ansSteps = document.getElementById("ansSteps");
+		let my_chart = null;
+		let steps_html;
+		const info = document.getElementById("info");
+		const infoBox = document.getElementById('infoBox');
+		let hoverTimer;
+		const desc =  `
+			        <h3>Quartiles and Interquartile Range (IQR)</h3>
+
+					<h4>
+					    Measures that divide a dataset into sections and describe the spread of the middle portion of the data.
+					</h4>
+					<ul>
+					    <li>
+					        <b>First Quartile (Q1)</b> → The value below which 25% of the data falls. It represents the lower quartile of the dataset.
+					    </li>
+					    <li>
+					        <b>Second Quartile (Q2)</b> → The median of the dataset. It divides the data into two equal halves, with 50% of the values below it and 50% above it.
+					    </li>
+					    <li>
+					        <b>Third Quartile (Q3)</b> → The value below which 75% of the data falls. It represents the upper quartile of the dataset.
+					    </li>
+					    <li>
+					        <b>Interquartile Range (IQR)</b> → The difference between the third and first quartiles, calculated as <b>IQR = Q3 − Q1</b>. It measures the spread of the middle 50% of the data.
+					    </li>
+					    <li>
+					        <b>Small IQR</b> → Indicates that the middle half of the data is closely clustered together.
+					    </li>
+					    <li>
+					        <b>Large IQR</b> → Indicates that the middle half of the data is more widely spread out.
+					    </li>
+					</ul>
+			    `;
+
+		function showInfo(){
+			infoBox.innerHTML = desc;
+			infoBox.classList.add("show");
+		}
+		function hideInfo(){
+			infoBox.innerHTML = "";
+			infoBox.classList.remove("show");
+
+		}
+
+		info.addEventListener("mouseenter",()=>{
+
+			hoverTimer = setTimeout(()=>{
+				showInfo();
+			},1000);
+		});
+
+		info.addEventListener("mouseleave",()=>{
+
+			clearTimeout(hoverTimer);
+		});
+
+		info.addEventListener("click",(e)=>{
+
+			e.stopPropagation();
+
+			if(infoBox.classList.contains("show")){
+				hideInfo();
+			}else{
+				showInfo();
+			}
+		});
+
+		infoBox.addEventListener("mouseenter", () => {
+		    clearTimeout(hoverTimer);
+		});
+
+		infoBox.addEventListener("mouseleave", () => {
+		    hideInfo();
+		});
+
+		document.addEventListener("click", () => {
+		    hideInfo();
+		});
+
+		submit.addEventListener("click",()=>{
+
+			ansSteps.innerHTML = ' ';
+
+			if(my_chart){
+				my_chart.destroy();
+			}
+
+		let data_y;
+		try{
+
+			if(y.value.trim() === ""){
+			    throw "Please enter some data.";
+			}
+		    data_y = y.value.trim().split(/[\s,]+/).map(Number);
+
+		    if(data_y.some(Number.isNaN)){
+		        throw "Only numerical values are allowed.";
+		    }
+
+		}catch(error){
+
+		    alert(error);
+		    return;
+
+		}
+
+		let sorted = [...data_y].sort((a,b)=>a-b);
+		let values = quartile(data_y);
+		let q1 = values[0];
+		let median = values[1];
+		let q3 = values[2];
+		let iqr = values[3];
+
+		
+		let min = Math.min(...sorted);
+		let max = Math.max(...sorted);
+
+		result.innerHTML = `
+			<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+			 font-size: 2em; font-family: monospace;">
+				<span>Q1</span><span>:</span><span>${q1}</span>
+				<span>Q2</span><span>:</span><span>${median}</span>
+				<span>Q3</span><span>:</span><span>${q3}</span>
+				<span>IQR</span><span>:</span><span>${iqr}</span>
+				
+				
+			</div>
+		`;
+
+		steps.style.display = "block";
+
+		my_chart = new Chart("myChart", {
+
+			type: 'scatter',
+
+			data: {
+				labels: ['Dataset'],
+
+				datasets: [
+					{
+						type: 'boxplot',
+						label: 'Quartile Distribution',
+						backgroundColor: 'rgba(10,100,255,0.2)',
+						borderColor: 'rgb(10,100,255)',
+						borderWidth: 2,
+						barThickness: 200,
+
+						data: [{
+							x: 0,
+							min: min,
+							q1: q1,
+							median: median,
+							q3: q3,
+							max: max,
+
+							whiskerMin: min,
+							whiskerMax: max
+						}]
+					},
+					{
+						type: 'scatter',
+						label: 'Raw Data',
+						data: data_y.map(v => ({
+							x: (Math.random() - 0.5)*0.2,
+							y: v
+						})),
+
+						pointRadius: 4,
+						pointHoverRadius: 2,
+						backgroundColor: 'green',
+					}
+				]
+			},
+
+			options: {
+
+				responsive: true,
+
+				layout: {
+					padding: 20
+				},
+
+				plugins: {
+
+					legend: {
+						display: false
+					},
+
+					title: {
+						display: true,
+						text: 'Box Plot'
+					},
+
+					tooltip: {
+
+						callbacks: {
+
+							label: function(context){
+
+								let v = context.raw;
+
+								return [
+									`Min: ${v.min}`,
+									`Q1: ${v.q1}`,
+									`Median: ${v.median}`,
+									`Q3: ${v.q3}`,
+									`Max: ${v.max}`,
+									`IQR: ${v.q3 - v.q1}`
+								];
+							}
+						}
+					}
+				},
+
+				scales: {
+
+					x: {
+
+						min: -0.6,
+						max: 0.6,
+						ticks: {
+							display: false
+						},
+						grid: {
+							display: false
+						},
+
+					},
+
+					y: {
+
+						title: {
+							display: true,
+							text: 'Values'
+						},
+						grid: {
+							display: false
+						}
+					}
+				}
+			}
+		});
+
+		steps_html = `
+	<div class="steps-container">
+
+		<h2>Quartiles and Interquartile Range</h2>
+
+		<p>
+			Quartiles divide the ordered dataset into four equal parts.
+		</p>
+
+		<h3>Step 1: Sort the Data</h3>
+
+		<p>
+			\\[
+			${sorted.join(', ')}
+			\\]
+		</p>
+
+		<p>
+			Total Number of Terms:
+		</p>
+
+		<p>
+			\\[
+			n = ${sorted.length}
+			\\]
+		</p>
+
+		<h3>Step 2: Find the Position of \\(Q_1\\)</h3>
+
+		<p>
+			Formula:
+		</p>
+
+		<p>
+			\\[
+			Q_1 = \\left(\\frac{n+1}{4}\\right)^{th}\\ term
+			\\]
+		</p>
+
+		<p>
+			Substituting:
+		</p>
+
+		<p>
+			\\[
+			Q_1
+			=
+			\\left(
+			\\frac{
+			${sorted.length}+1
+			}{4}
+			\\right)^{th}
+			term
+			\\]
+		</p>
+
+		<p>
+			\\[
+			Q_1
+			=
+			${(sorted.length + 1)/4}^{th}
+			term
+			\\]
+		</p>
+
+		<p>
+			\\[
+			Q_1 = ${q1}
+			\\]
+		</p>
+
+		<h3>Step 3: Find the Position of \\(Q_2\\) (Median)</h3>
+
+		<p>
+			Formula:
+		</p>
+
+		<p>
+			\\[
+			Q_2 = \\left(\\frac{n+1}{2}\\right)^{th}\\ term
+			\\]
+		</p>
+
+		<p>
+			Substituting:
+		</p>
+
+		<p>
+			\\[
+			Q_2
+			=
+			\\left(
+			\\frac{
+			${sorted.length}+1
+			}{2}
+			\\right)^{th}
+			term
+			\\]
+		</p>
+
+		<p>
+			\\[
+			Q_2
+			=
+			${(sorted.length + 1)/2}^{th}
+			term
+			\\]
+		</p>
+
+		<p>
+			\\[
+			Q_2 = ${median}
+			\\]
+		</p>
+
+		<h3>Step 4: Find the Position of \\(Q_3\\)</h3>
+
+		<p>
+			Formula:
+		</p>
+
+		<p>
+			\\[
+			Q_3 = \\left(\\frac{3(n+1)}{4}\\right)^{th}\\ term
+			\\]
+		</p>
+
+		<p>
+			Substituting:
+		</p>
+
+		<p>
+			\\[
+			Q_3
+			=
+			\\left(
+			\\frac{
+			3(${sorted.length}+1)
+			}{4}
+			\\right)^{th}
+			term
+			\\]
+		</p>
+
+		<p>
+			\\[
+			Q_3
+			=
+			${(3*(sorted.length + 1))/4}^{th}
+			term
+			\\]
+		</p>
+
+		<p>
+			\\[
+			Q_3 = ${q3}
+			\\]
+		</p>
+
+		<h3>Step 5: Calculate the Interquartile Range</h3>
+
+		<p>
+			Formula:
+		</p>
+
+		<p>
+			\\[
+			IQR = Q_3 - Q_1
+			\\]
+		</p>
+
+		<p>
+			Substituting:
+		</p>
+
+		<p>
+			\\[
+			IQR = ${q3} - ${q1}
+			\\]
+		</p>
+
+		<p>
+			\\[
+			IQR = ${iqr}
+			\\]
+		</p>
+
+		<h3>Final Answers</h3>
+
+		<p style="font-size:1.2em;">
+			\\[
+			Q_1 = ${q1}
+			\\]
+		</p>
+
+		<p style="font-size:1.2em;">
+			\\[
+			Q_2 = ${median}
+			\\]
+		</p>
+
+		<p style="font-size:1.2em;">
+			\\[
+			Q_3 = ${q3}
+			\\]
+		</p>
+
+		<p style="font-size:1.2em;">
+			\\[
+			IQR = ${iqr}
+			\\]
+		</p>
+
+	</div>
+`;
+
+	});
+
+	steps.addEventListener("click",()=>{
+
+		if(steps.textContent == "Show Steps"){
+
+			ansSteps.innerHTML = steps_html;
+			MathJax.typesetPromise();
+			steps.textContent = "Hide Steps";
+		}else if(steps.textContent == "Hide Steps"){
+
+			ansSteps.innerHTML = ' ';
+			steps.textContent = "Show Steps";
+		}
+	});
+
+
+	</script>
+</body>
+</html>

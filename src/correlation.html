@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Statistics Calculator</title>
+	<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  	<script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  	</script>
+	<script src="statscalc.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+
+<body>
+
+	<div class="container">
+		
+		<div class="head">
+			<h1>Correlation Coefficient</h1>
+			<i class="fa-regular fa-circle-question" id="info"></i>
+			<div id="infoBox"></div>
+		</div>
+		<h2>The linear relationship between two variables</h2>
+		<div class="row">
+			<label>Data 1</label>
+			<input type="text" name="x" id="x" placeholder="Enter Data" required>
+		</div>
+		<div class="row">
+			<label>Data 2</label>
+			<input type="text" name="y" id="y" placeholder="Enter Data" required>
+		</div>
+		<button id="calculate">Calculate</button>
+	</div>
+
+	<p style="font-size: 2em" id="answer"></p>
+
+	<div class="graph">
+		<canvas id="myChart"></canvas>
+	</div>
+
+	<button id="steps">Show Steps</button>
+	<p id="ansSteps"></p>
+
+	<script>
+		let x = document.getElementById("x");
+		let y = document.getElementById("y");
+		let submit = document.getElementById("calculate");
+		let result = document.getElementById("answer");
+		let steps = document.getElementById("steps");
+		let ansSteps = document.getElementById("ansSteps");
+		let my_Chart = null;
+		let steps_html;
+		const info = document.getElementById("info");
+		const infoBox = document.getElementById('infoBox');
+		let hoverTimer;
+		const desc =  `
+			        <h3>Pearson's Correlation Coefficient</h3>
+			        <h4>Measures the strength and direction of a linear relationship between two datasets</h4>
+			        <ul>
+			            <li>r = 1 → Perfect positive correlation, meaning if Data 1 increases, Data 2 also increases.  Same for the other way - both decreasing together.</li>
+			            <li>r = -1 → Perfect negative correlation, meaning if Data 1 increases, Data 2 decreases, similarly, if Data 1 decreases, Data 2 increases, following an inverse relationship.</li>
+			            <li>r = 0 → No meaningful correlation can be formed.</li>
+			        </ul>
+			    `;
+
+		function showInfo(){
+			infoBox.innerHTML = desc;
+			infoBox.classList.add("show");
+		}
+		function hideInfo(){
+			infoBox.innerHTML = "";
+			infoBox.classList.remove("show");
+
+		}
+
+		info.addEventListener("mouseenter",()=>{
+
+			hoverTimer = setTimeout(()=>{
+				showInfo();
+			},1000);
+		});
+
+		info.addEventListener("mouseleave",()=>{
+
+			clearTimeout(hoverTimer);
+		});
+
+		info.addEventListener("click",(e)=>{
+
+			e.stopPropagation();
+
+			if(infoBox.classList.contains("show")){
+				hideInfo();
+			}else{
+				showInfo();
+			}
+		});
+
+		infoBox.addEventListener("mouseenter", () => {
+		    clearTimeout(hoverTimer);
+		});
+
+		infoBox.addEventListener("mouseleave", () => {
+		    hideInfo();
+		});
+
+		document.addEventListener("click", () => {
+		    hideInfo();
+		});
+
+		submit.addEventListener("click",()=>{
+
+			ansSteps.innerHTML = ' ';
+
+			if (my_Chart){
+				my_Chart.destroy();
+			}
+
+		
+		try{
+
+			if(x.value.trim() === "" || y.value.trim() === ""){
+			    throw "Please enter some data.";
+			}
+
+		    data_x = x.value.trim().split(/[\s,]+/).map(Number);
+		    data_y = y.value.trim().split(/[\s,]+/).map(Number);
+
+		    if(data_x.some(Number.isNaN) || data_y.some(Number.isNaN)){
+		        throw "Only numerical values are allowed.";
+		    }
+
+		    if(data_x.length !== data_y.length){
+		        throw "Both datasets must contain the same number of values.";
+		    }
+
+		}catch(error){
+
+		    alert(error);
+		    return;
+
+		}
+		let answers = correlation_coeff(data_x,data_y);
+
+		let r = answers[0];
+		let sum_x = answers[1];
+		let sum_y = answers[2];
+		let sum_xx = answers[3];
+		let sum_yy = answers[4];
+		let sum_xy = answers[5];
+		let n = answers[6];
+		let xx = answers[7];
+		let yy = answers[8];
+		let xy = answers[9];
+
+		result.textContent = 'r = ' + r;
+
+		let data_xy = data_x.map((x,i)=>({x: x,y: data_y[i]}));
+		console.log(data_xy);
+
+		my_Chart = new Chart("myChart",{
+			type: "scatter",
+			data: {
+				datasets: [{
+					label: "X vs Y",
+					pointRadius: 4,
+					pointBackgroundColor: "blue",
+					data: data_xy,
+				}]
+			}
+		});
+
+		steps.style.display = 'block';
+		steps_html = `
+				<div class="steps-container">
+
+					<h2>Pearson's Correlation Coefficient</h2>
+
+					<p>
+						The Pearson correlation coefficient measures the strength
+						and direction of the linear relationship between two variables.
+					</p>
+
+					<h3>Formula</h3>
+
+					<p>
+						\\[
+						r =
+						\\frac{
+						n\\sum xy - (\\sum x)(\\sum y)
+						}
+						{
+						\\sqrt{
+						[n\\sum x^2 - (\\sum x)^2]
+						[n\\sum y^2 - (\\sum y)^2]
+						}
+						}
+						\\]
+					</p>
+
+					<h3>Step 1: Compute the Required Constants</h3>
+
+					<table class="deviation-table">
+
+						<tr>
+							<th>\\(x\\)</th>
+							<th>\\(y\\)</th>
+							<th>\\(x^2\\)</th>
+							<th>\\(y^2\\)</th>
+							<th>\\(xy\\)</th>
+						</tr>
+
+						${data_x.map((xVal,i)=>{
+
+							return `
+								<tr>
+									<td>${xVal}</td>
+									<td>${data_y[i]}</td>
+									<td>${xx[i]}</td>
+									<td>${yy[i]}</td>
+									<td>${xy[i]}</td>
+								</tr>
+							`;
+
+						}).join('')}
+
+						<tr class="sum-row">
+							<td><b>${sum_x}</b></td>
+							<td><b>${sum_y}</b></td>
+							<td><b>${sum_xx}</b></td>
+							<td><b>${sum_yy}</b></td>
+							<td><b>${sum_xy}</b></td>
+						</tr>
+
+					</table>
+
+					<p>
+						\\[
+						n = ${n}
+						\\]
+					</p>
+
+					<p>
+						\\[
+						\\sum x = ${sum_x}
+						\\]
+					</p>
+
+					<p>
+						\\[
+						\\sum y = ${sum_y}
+						\\]
+					</p>
+
+					<p>
+						\\[
+						\\sum x^2 = ${sum_xx}
+						\\]
+					</p>
+
+					<p>
+						\\[
+						\\sum y^2 = ${sum_yy}
+						\\]
+					</p>
+
+					<p>
+						\\[
+						\\sum xy = ${sum_xy}
+						\\]
+					</p>
+
+					<h3>Step 2: Substitute into the Formula</h3>
+
+					<p>
+						\\[
+						r =
+						\\frac{
+						(${n})(${sum_xy}) - (${sum_x})(${sum_y})
+						}
+						{
+						\\sqrt{
+						[
+						(${n})(${sum_xx}) - (${sum_x})^2
+						]
+						[
+						(${n})(${sum_yy}) - (${sum_y})^2
+						]
+						}
+						}
+						\\]
+					</p>
+
+					<p>
+						\\[
+						r = ${r}
+						\\]
+					</p>
+
+
+					<h3>Final Answer</h3>
+
+					<p style="font-size:1.5em; font-weight:bold;">
+						\\[
+						r = ${r}
+						\\]
+					</p>
+
+				</div>
+			`;
+
+	});
+
+		steps.addEventListener("click",()=>{
+
+			if(steps.textContent == "Show Steps"){ 
+
+				ansSteps.innerHTML = steps_html;
+				MathJax.typesetPromise();
+				steps.textContent = "Hide Steps";
+			}else if(steps.textContent == "Hide Steps"){
+				ansSteps.innerHTML = ' ';
+				steps.textContent = "Show Steps";
+			}
+		});
+	</script>
+</body>
+</html>
