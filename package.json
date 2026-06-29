@@ -1,18 +1,37 @@
 {
+  "name": "stat-calc",
+  "version": "1.0.0",
+  "description": "Statistics Calculator",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish never"
+  },
+  "build": {
+    "appId": "com.paramesh.statcalc",
+    "productName": "StatCalc",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "src/logo.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "src/logo.png"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "src/logo.png"
+    }
+  },
   "dependencies": {
     "mathjs": "^15.2.0"
   },
-  "name": "stat-calc",
-  "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
-  "scripts": {
-    "start": "electron ."
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
-    "electron": "^42.4.0"
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3"
   }
 }
