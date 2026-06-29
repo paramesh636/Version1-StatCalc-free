@@ -142,6 +142,8 @@
 			myChart.destroy();
 		}
 
+		steps.textContent = "Show Steps";
+
 		let data_y;
 		let bin_size;
 		
@@ -379,165 +381,327 @@
 			}
 		});
 
-		steps_html = `
-	<div class="steps-container">
+		if(data_y.length > 10){
+			let trimmed_y = data_y.slice(0,9);
+			let trimmed_dev = deviations.slice(0,9);
 
-		<h2>Variance and Standard Deviation</h2>
+			steps_html = `
+			<div class="steps-container">
 
-		<p>
-			Standard deviation measures how far the data spreads from the mean.
-		</p>
+				<h2>Variance and Standard Deviation</h2>
 
-		<h3>Step 1: Raw Data</h3>
+				<p>
+					Standard deviation measures how far the data spreads from the mean.
+				</p>
 
-		<p>
-			\\[
-			${data_y.join(', ')}
-			\\]
-		</p>
+				
 
-		<h3>Step 2: Calculate the Mean</h3>
+				<h3>Step 1: Calculate the Mean</h3>
 
-		<p>
-			\\[
-			\\bar{x} = \\frac{\\sum x}{n}
-			\\]
-		</p>
+				<p>
+					\\[
+					\\bar{x} = \\frac{\\sum x}{n}
+					\\]
+				</p>
 
-		<p>
-			\\[
-			\\bar{x}
-			=
-			\\frac{
-			${data_y.map(Number).reduce((a,b)=>a+b,0)}
-			}{
-			${data_y.length}
-			}
-			=
-			${mean_y}
-			\\]
-		</p>
+				<p>
+					\\[
+					\\bar{x}
+					=
+					\\frac{
+					${data_y.map(Number).reduce((a,b)=>a+b,0)}
+					}{
+					${data_y.length}
+					}
+					=
+					${mean_y}
+					\\]
+				</p>
 
-		<h3>Step 3: Calculate the Deviations</h3>
+				<h3>Step 2: Calculate the Deviations</h3>
 
-			<table class="deviation-table">
+					<table class="deviation-table">
 
-				<tr>
-					<th>\\(x_i\\)</th>
-					<th>\\((x_i - \\bar{x})^2\\)</th>
-				</tr>
-
-				${data_y.map((v,i) => {
-
-					return `
 						<tr>
-							<td>${v}</td>
-							<td>${deviations[i]}</td>
+							<th>\\(x_i\\)</th>
+							<th>\\((x_i - \\bar{x})^2\\)</th>
 						</tr>
-					`;
 
-				}).join('')}
+						${trimmed_y.map((v,i) => {
 
-				<tr class="sum-row">
-					<td>
-						<b>
-						\\[
-						\\sum (x_i - \\bar{x})^2
-						\\]
-						</b>
-					</td>
+							return `
+								<tr>
+									<td>${v}</td>
+									<td>${trimmed_dev[i]}</td>
+								</tr>
+							`;
 
-					<td>
-						<b>${deviations.reduce((a,b)=>a+b,0)}</b>
-					</td>
-				</tr>
+						}).join('')}
 
-			</table>
+								<tr>
+									<td>...</td>
+									<td>...</td>
+								</tr>
+								<tr>
+									<td>${data_y[data_y.length - 1]}</td>
+									<td>${deviations[data_y.length - 1]}</td>
+								</tr>
 
-		<h3>Step 4: Calculate the Variance</h3>
+						<tr class="sum-row">
+							<td>
+								<b>
+								\\[
+								\\sum (x_i - \\bar{x})^2
+								\\]
+								</b>
+							</td>
 
-		<p>
-			Formula:
-		</p>
+							<td>
+								<b>${deviations.reduce((a,b)=>a+b,0)}</b>
+							</td>
+						</tr>
 
-		<p>
-			\\[
-			\\sigma^2 =
-			\\frac{
-			\\sum (x_i - \\bar{x})^2
-			}{n}
-			\\]
-		</p>
+					</table>
 
-		<p>
-			Substituting:
-		</p>
+				<h3>Step 3: Calculate the Variance</h3>
 
-		<p>
-			\\[
-			\\sigma^2
-			=
-			\\frac{
-			${Math.round(
-				data_y.reduce((s,v)=>{
-					let d = v - mean_y;
-					return s + d*d;
-				},0)*1000
-			)/1000}
-			}{
-			${data_y.length}
-			}
-			\\]
-		</p>
+				<p>
+					Formula:
+				</p>
 
-		<p>
-			\\[
-			\\sigma^2 = ${var_y}
-			\\]
-		</p>
+				<p>
+					\\[
+					\\sigma^2 =
+					\\frac{
+					\\sum (x_i - \\bar{x})^2
+					}{n}
+					\\]
+				</p>
 
-		<h3>Step 5: Calculate the Standard Deviation</h3>
+				<p>
+					Substituting:
+				</p>
 
-		<p>
-			\\[
-			\\sigma = \\sqrt{\\sigma^2}
-			\\]
-		</p>
+				<p>
+					\\[
+					\\sigma^2
+					=
+					\\frac{
+					${Math.round(
+						data_y.reduce((s,v)=>{
+							let d = v - mean_y;
+							return s + d*d;
+						},0)*1000
+					)/1000}
+					}{
+					${data_y.length}
+					}
+					\\]
+				</p>
 
-		<p>
-			\\[
-			\\sigma = \\sqrt{${var_y}}
-			\\]
-		</p>
+				<p>
+					\\[
+					\\sigma^2 = ${var_y}
+					\\]
+				</p>
 
-		<p>
-			\\[
-			\\sigma = ${sd}
-			\\]
-		</p>
+				<h3>Step 4: Calculate the Standard Deviation</h3>
 
-		<h3>Final Answers</h3>
+				<p>
+					\\[
+					\\sigma = \\sqrt{\\sigma^2}
+					\\]
+				</p>
 
-		<p style="font-size:1.2em;">
-			\\[
-			\\text{Mean} = ${mean_y}
-			\\]
-		</p>
+				<p>
+					\\[
+					\\sigma = \\sqrt{${var_y}}
+					\\]
+				</p>
 
-		<p style="font-size:1.2em;">
-			\\[
-			\\text{Variance} = ${var_y}
-			\\]
-		</p>
+				<p>
+					\\[
+					\\sigma = ${sd}
+					\\]
+				</p>
 
-		<p style="font-size:1.2em;">
-			\\[
-			\\text{Standard Deviation} = ${sd}
-			\\]
-		</p>
+				<h3>Final Answers</h3>
 
-	</div>
-`;
+				<p style="font-size:1.2em;">
+					\\[
+					\\text{Mean} = ${mean_y}
+					\\]
+				</p>
+
+				<p style="font-size:1.2em;">
+					\\[
+					\\text{Variance} = ${var_y}
+					\\]
+				</p>
+
+				<p style="font-size:1.2em;">
+					\\[
+					\\text{Standard Deviation} = ${sd}
+					\\]
+				</p>
+
+			</div>
+		`;	
+		}else{ 
+
+		steps_html = `
+			<div class="steps-container">
+
+				<h2>Variance and Standard Deviation</h2>
+
+				<p>
+					Standard deviation measures how far the data spreads from the mean.
+				</p>
+
+
+				<h3>Step 1: Calculate the Mean</h3>
+
+				<p>
+					\\[
+					\\bar{x} = \\frac{\\sum x}{n}
+					\\]
+				</p>
+
+				<p>
+					\\[
+					\\bar{x}
+					=
+					\\frac{
+					${data_y.map(Number).reduce((a,b)=>a+b,0)}
+					}{
+					${data_y.length}
+					}
+					=
+					${mean_y}
+					\\]
+				</p>
+
+				<h3>Step 2: Calculate the Deviations</h3>
+
+					<table class="deviation-table">
+
+						<tr>
+							<th>\\(x_i\\)</th>
+							<th>\\((x_i - \\bar{x})^2\\)</th>
+						</tr>
+
+						${data_y.map((v,i) => {
+
+							return `
+								<tr>
+									<td>${v}</td>
+									<td>${deviations[i]}</td>
+								</tr>
+							`;
+
+						}).join('')}
+
+						<tr class="sum-row">
+							<td>
+								<b>
+								\\[
+								\\sum (x_i - \\bar{x})^2
+								\\]
+								</b>
+							</td>
+
+							<td>
+								<b>${deviations.reduce((a,b)=>a+b,0)}</b>
+							</td>
+						</tr>
+
+					</table>
+
+				<h3>Step 3: Calculate the Variance</h3>
+
+				<p>
+					Formula:
+				</p>
+
+				<p>
+					\\[
+					\\sigma^2 =
+					\\frac{
+					\\sum (x_i - \\bar{x})^2
+					}{n}
+					\\]
+				</p>
+
+				<p>
+					Substituting:
+				</p>
+
+				<p>
+					\\[
+					\\sigma^2
+					=
+					\\frac{
+					${Math.round(
+						data_y.reduce((s,v)=>{
+							let d = v - mean_y;
+							return s + d*d;
+						},0)*1000
+					)/1000}
+					}{
+					${data_y.length}
+					}
+					\\]
+				</p>
+
+				<p>
+					\\[
+					\\sigma^2 = ${var_y}
+					\\]
+				</p>
+
+				<h3>Step 4: Calculate the Standard Deviation</h3>
+
+				<p>
+					\\[
+					\\sigma = \\sqrt{\\sigma^2}
+					\\]
+				</p>
+
+				<p>
+					\\[
+					\\sigma = \\sqrt{${var_y}}
+					\\]
+				</p>
+
+				<p>
+					\\[
+					\\sigma = ${sd}
+					\\]
+				</p>
+
+				<h3>Final Answers</h3>
+
+				<p style="font-size:1.2em;">
+					\\[
+					\\text{Mean} = ${mean_y}
+					\\]
+				</p>
+
+				<p style="font-size:1.2em;">
+					\\[
+					\\text{Variance} = ${var_y}
+					\\]
+				</p>
+
+				<p style="font-size:1.2em;">
+					\\[
+					\\text{Standard Deviation} = ${sd}
+					\\]
+				</p>
+
+			</div>
+		`;
+	}
 
 	});
 

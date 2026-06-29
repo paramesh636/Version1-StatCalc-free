@@ -9,6 +9,7 @@ const keywords = [{topic:'correlation(pearson)',keywords:['correlation','relatio
 				  {topic:'quadratic regression',keywords:['curve','parabola','quadratic regression','fitting']},
 				  {topic:'normal distribution',keywords:['normal distribution','bell curve','probability']},
 				  {topic:'binomial distribution',keywords:['binomial distribution']},
-				  {topic:'logistic map',keywords:['fun']}
+				  {topic:'logistic map',keywords:['fun']},
+				  {topic:'collatz conj.',keywords:['collatz','3x+1','miscellaneous']}
 
 				   ];

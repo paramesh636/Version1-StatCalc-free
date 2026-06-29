@@ -121,6 +121,8 @@
 				my_Chart.destroy();
 			}
 
+			steps.textContent = "Show Steps";
+
 		
 		try{
 
@@ -176,7 +178,13 @@
 		});
 
 		steps.style.display = 'block';
-		steps_html = `
+		if(data_x.length > 10){
+			let trimmed_x = data_x.slice(0,9);
+			let trimmed_y = data_y.slice(0,9);
+			let trimmed_xx = xx.slice(0,9);
+			let trimmed_yy = yy.slice(0,9);
+			let trimmed_xy = xy.slice(0,9);
+			steps_html = `
 				<div class="steps-container">
 
 					<h2>Pearson's Correlation Coefficient</h2>
@@ -215,19 +223,36 @@
 							<th>\\(xy\\)</th>
 						</tr>
 
-						${data_x.map((xVal,i)=>{
+
+						${trimmed_x.map((xVal,i)=>{
 
 							return `
 								<tr>
 									<td>${xVal}</td>
-									<td>${data_y[i]}</td>
-									<td>${xx[i]}</td>
-									<td>${yy[i]}</td>
-									<td>${xy[i]}</td>
+									<td>${trimmed_y[i]}</td>
+									<td>${trimmed_xx[i]}</td>
+									<td>${trimmed_yy[i]}</td>
+									<td>${trimmed_xy[i]}</td>
 								</tr>
 							`;
 
 						}).join('')}
+
+							<tr>
+								<td>...</td>
+								<td>...</td>
+								<td>...</td>
+								<td>...</td>
+								<td>...</td>
+							</tr>
+
+							<tr>
+								<td>${data_x[data_x.length - 1]}</td>
+								<td>${data_y[data_y.length - 1]}</td>
+								<td>${xx[xx.length - 1]}</td>
+								<td>${yy[yy.length - 1]}</td>
+								<td>${xy[xy.length - 1]}</td>
+							</tr>
 
 						<tr class="sum-row">
 							<td><b>${sum_x}</b></td>
@@ -313,6 +338,147 @@
 
 				</div>
 			`;
+
+		}else{ 
+			steps_html = `
+					<div class="steps-container">
+
+						<h2>Pearson's Correlation Coefficient</h2>
+
+						<p>
+							The Pearson correlation coefficient measures the strength
+							and direction of the linear relationship between two variables.
+						</p>
+
+						<h3>Formula</h3>
+
+						<p>
+							\\[
+							r =
+							\\frac{
+							n\\sum xy - (\\sum x)(\\sum y)
+							}
+							{
+							\\sqrt{
+							[n\\sum x^2 - (\\sum x)^2]
+							[n\\sum y^2 - (\\sum y)^2]
+							}
+							}
+							\\]
+						</p>
+
+						<h3>Step 1: Compute the Required Constants</h3>
+
+						<table class="deviation-table">
+
+							<tr>
+								<th>\\(x\\)</th>
+								<th>\\(y\\)</th>
+								<th>\\(x^2\\)</th>
+								<th>\\(y^2\\)</th>
+								<th>\\(xy\\)</th>
+							</tr>
+
+
+							${data_x.map((xVal,i)=>{
+
+								return `
+									<tr>
+										<td>${xVal}</td>
+										<td>${data_y[i]}</td>
+										<td>${xx[i]}</td>
+										<td>${yy[i]}</td>
+										<td>${xy[i]}</td>
+									</tr>
+								`;
+
+							}).join('')}
+
+							<tr class="sum-row">
+								<td><b>${sum_x}</b></td>
+								<td><b>${sum_y}</b></td>
+								<td><b>${sum_xx}</b></td>
+								<td><b>${sum_yy}</b></td>
+								<td><b>${sum_xy}</b></td>
+							</tr>
+
+						</table>
+
+						<p>
+							\\[
+							n = ${n}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum x = ${sum_x}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum y = ${sum_y}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum x^2 = ${sum_xx}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum y^2 = ${sum_yy}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum xy = ${sum_xy}
+							\\]
+						</p>
+
+						<h3>Step 2: Substitute into the Formula</h3>
+
+						<p>
+							\\[
+							r =
+							\\frac{
+							(${n})(${sum_xy}) - (${sum_x})(${sum_y})
+							}
+							{
+							\\sqrt{
+							[
+							(${n})(${sum_xx}) - (${sum_x})^2
+							]
+							[
+							(${n})(${sum_yy}) - (${sum_y})^2
+							]
+							}
+							}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							r = ${r}
+							\\]
+						</p>
+
+
+						<h3>Final Answer</h3>
+
+						<p style="font-size:1.5em; font-weight:bold;">
+							\\[
+							r = ${r}
+							\\]
+						</p>
+
+					</div>
+				`;
+			}
 
 	});
 

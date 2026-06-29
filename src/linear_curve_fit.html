@@ -139,6 +139,8 @@
 				my_chart.destroy();
 			}
 
+			steps.textContent = "Show Steps";
+
 			let data_x;
 			let data_y;
 			
@@ -213,6 +215,183 @@
 				}
 			});
 
+			if(data_x.length > 10){
+				let trimmed_x = data_x.slice(0,9);
+				let trimmed_y = data_y.slice(0,9);
+				let trimmed_x2 = x2.slice(0,9);
+				let trimmed_xy = xy.slice(0,9);
+				steps_html = `
+					<div class="steps-container">
+
+						<h2>Linear Regression using Least Squares Method</h2>
+
+						<p>
+							We fit a straight line of the form:
+						</p>
+
+						<p>
+							\\[
+							y = ax + b
+							\\]
+						</p>
+
+						<h3>Step 1: Normal Equations</h3>
+
+						<p>
+							The least squares method gives the following normal equations:
+						</p>
+
+						<p>
+							\\[
+							\\sum y = a\\sum x + nb
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum xy = a\\sum x^2 + b\\sum x
+							\\]
+						</p>
+
+						<h3>Step 2: Construct the Computation Table</h3>
+
+						<table class="deviation-table">
+
+							<tr>
+								<th>\\(x\\)</th>
+								<th>\\(y\\)</th>
+								<th>\\(x^2\\)</th>
+								<th>\\(xy\\)</th>
+							</tr>
+
+							${trimmed_x.map((xVal,i)=>{
+
+								return `
+									<tr>
+										<td>${xVal}</td>
+										<td>${trimmed_y[i]}</td>
+										<td>${trimmed_x2[i]}</td>
+										<td>${trimmed_xy[i]}</td>
+									</tr>
+								`;
+
+							}).join('')}
+
+									<tr>
+										<td>...</td>
+										<td>...</td>
+										<td>...</td>
+										<td>...</td>
+									</tr>
+
+									<tr>
+										<td>${data_x[n - 1]}</td>
+										<td>${data_y[n - 1]}</td>
+										<td>${x2[n - 1]}</td>
+										<td>${xy[n - 1]}</td>
+									</tr>
+
+							<tr class="sum-row">
+								<td><b>${sum_x}</b></td>
+								<td><b>${sum_y}</b></td>
+								<td><b>${sum_x2}</b></td>
+								<td><b>${sum_xy}</b></td>
+							</tr>
+
+						</table>
+
+						<h3>Step 3: Required Constants</h3>
+
+						<p>
+							\\[
+							n = ${n}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum x = ${sum_x}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum y = ${sum_y}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum x^2 = ${sum_x2}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sum xy = ${sum_xy}
+							\\]
+						</p>
+
+						<h3>Step 4: Substitute into the Normal Equations</h3>
+
+						<p>
+							First Equation:
+						</p>
+
+						<p>
+							\\[
+							${sum_y}
+							=
+							a(${sum_x})
+							+
+							${n}b
+							\\]
+						</p>
+
+						<p>
+							Second Equation:
+						</p>
+
+						<p>
+							\\[
+							${sum_xy}
+							=
+							a(${sum_x2})
+							+
+							b(${sum_x})
+							\\]
+						</p>
+
+						<h3>Step 5: Solve the Equations</h3>
+
+						<p>
+							After solving the simultaneous equations:
+						</p>
+
+						<p>
+							\\[
+							a = ${a}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							b = ${b}
+							\\]
+						</p>
+
+						<h3>Final Regression Equation</h3>
+
+						<p style="font-size:1.5em; font-weight:bold;">
+							\\[
+							y = ${a}x + ${b}
+							\\]
+						</p>
+
+					</div>
+				`;
+
+			}else{ 
 			steps_html = `
 					<div class="steps-container">
 
@@ -369,6 +548,7 @@
 
 					</div>
 				`;
+			}
 
 		});
 

@@ -244,3 +244,24 @@ function binomial_dist(n,p,x){
 
 	return ncx*(Math.pow(p,x))*(Math.pow(1-p,n-x));
 }
+
+function collatz(x){
+
+	let label = [];
+	let result = [];
+	let i = 1;
+	while(x > 1){
+
+		if(x%2 == 0){
+			x /= 2;
+		}else{
+			x = 3*x + 1;
+		}
+
+		label.push(i);
+		result.push(x);
+		i++;
+	}
+
+	return [label,result];
+}
