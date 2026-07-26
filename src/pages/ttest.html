@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistics Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+   </script>
+   <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+<script src="statscalc.js"></script>
+<link rel="stylesheet" type="text/css" href="styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<div class="container" style="height: 650px;">
+<div class="head">
+<h1>One-Sample t-Test</h1>
+<i class="fa-regular fa-circle-question" id="info"></i>
+<div id="infoBox"></div>
+</div>
+<h2>Testing a sample mean against a hypothesized value.</h2>
+<div class="row">
+<label>Mean:</label>
+<input type="text" name="m" id="p" placeholder="Enter Sample Mean" required>
+</div>
+<div class="row">
+<label>n:</label>
+<input type="text" name="y" id="n" placeholder="Enter Sample Size" required>
+</div>
+<div class="row">
+<label>Type:</label>
+<select name="Choose Type" id="select">
+<option value="less">Hₐ: μ < μ₀ (Left-tailed)</option>
+<option value="more">Hₐ: μ > μ₀ (Right-tailed)</option>
+<option value="between">Hₐ: μ ≠ μ₀ (Two-tailed)</option>
+</select>
+</div>
+<div class="row">
+<label>μ₀/X:</label>
+<input type="text" name="x" id="x" placeholder="Enter Hypothesized Mean" required>
+</div>
+<div class="row">
+<label>SD:</label>
+<input type="text" name="s" id="s" placeholder="Enter Sample Standard Deviation" required>
+</div>
+<button id="calculate">Generate</button>
+</div>
+<p id="answer"></p>
+<div class="graph">
+<canvas id="myChart"></canvas>
+</div>
+<button id="steps">Show Steps</button>
+<p id="ansSteps"></p>
+<script>
+let x = document.getElementById("x");
+let no = document.getElementById("n");
+let prob = document.getElementById("p");
+let sInput = document.getElementById("s");
+let submit = document.getElementById("calculate");
+let result = document.getElementById("answer");
+let steps = document.getElementById("steps");
+let ansSteps = document.getElementById("ansSteps");
+let my_chart = null;
+let options = document.getElementById("select");
+let steps_html;
+const info = document.getElementById("info");
+const infoBox = document.getElementById('infoBox');
+let hoverTimer;
+const desc = `
+        <h3>One-Sample t-Test</h3>
+<h4>
+    Tests whether the mean of a sample is significantly different from a hypothesized population mean.
+</h4>
+<ul>
+    <li><b>Sample Mean (x̄)</b> → Average of the sample data.</li>
+    <li><b>Sample Size (n)</b> → Number of observations.</li>
+    <li><b>Sample Std Dev (s)</b> → Standard deviation of the sample.</li>
+    <li><b>Hypothesized Mean (μ₀)</b> → The value being tested against.</li>
+    <li>Assumptions: Data approximately normally distributed or large n.</li>
+</ul>
+    `;
+function showInfo(){
+infoBox.innerHTML = desc;
+infoBox.classList.add("show");
+}
+function hideInfo(){
+infoBox.innerHTML = "";
+infoBox.classList.remove("show");
+}
+info.addEventListener("mouseenter",()=>{
+hoverTimer = setTimeout(()=>{
+showInfo();
+},1000);
+});
+info.addEventListener("mouseleave",()=>{
+clearTimeout(hoverTimer);
+});
+info.addEventListener("click",(e)=>{
+e.stopPropagation();
+if(infoBox.classList.contains("show")){
+hideInfo();
+}else{
+showInfo();
+}
+});
+infoBox.addEventListener("mouseenter", () => {
+    clearTimeout(hoverTimer);
+});
+infoBox.addEventListener("mouseleave", () => {
+    hideInfo();
+});
+document.addEventListener("click", () => {
+    hideInfo();
+});
+
+submit.addEventListener("click",()=>{
+ansSteps.innerHTML = ' ';
+steps.textContent = "Show Steps";
+if(my_chart){
+my_chart.destroy();
+}
+let val, n, xbar, s, mu0, t_stat, p_val, df;
+try{
+if(no.value.trim() === "" || prob.value.trim() === "" || x.value.trim() === "" || sInput.value.trim() === ""){
+    throw "Please enter all required data.";
+}
+    let xbar_val = parseFloat(prob.value.trim());
+    let n_val = parseInt(no.value.trim());
+    let mu_val = parseFloat(x.value.trim());
+    let s_val = parseFloat(sInput.value.trim());
+    if(isNaN(xbar_val) || isNaN(n_val) || isNaN(mu_val) || isNaN(s_val) || n_val <= 1 || s_val == 0){
+        throw "Invalid numerical inputs. Values must be > 0.";
+    }
+    xbar = xbar_val;
+    n = n_val;
+    mu0 = mu_val;
+    s = s_val;
+}catch(error){
+    alert(error);
+    return;
+}
+
+df = n - 1;
+t_stat = t_test_stat(xbar, mu0, s, n);
+p_val = calculate_t_pvalue(t_stat, df, options.value); 
+const difference = xbar - mu0;
+const se = s / Math.sqrt(n);
+p_val = (p_val < 0.000001 ? p_val.toExponential(5) : p_val.toFixed(5));
+
+result.innerHTML = `
+<div style = "height: 8em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+ font-size: 2em; font-family: monospace;">
+<span>t-statistic</span><span>:</span><span>${t_stat.toFixed(5)}</span>
+<span>df</span><span>:</span><span>${df}</span>
+<span>p-value</span><span>:</span><span>${p_val}</span>
+<span>Std Error</span><span>:</span><span>${se.toFixed(5)}</span>
+</div>
+`;
+
+steps_html = `
+<div class="steps-container">
+
+<h2>One-Sample t-Test</h2>
+
+<p><b>Null Hypothesis:</b> \\(\\mu=${mu0}\\)</p>
+
+<p><b>Alternative Hypothesis:</b> ${
+options.value === "less"
+? "\\(\\mu<" + mu0 + "\\)"
+: options.value === "more"
+? "\\(\\mu>" + mu0 + "\\)"
+: "\\(\\mu\\neq" + mu0 + "\\)"
+}</p>
+
+<h3>Step 1: Formula</h3>
+
+<p>
+
+\\[
+t=
+\\frac{\\bar{x}-\\mu_0}
+{
+\\frac{s}{\\sqrt{n}}
+}
+\\]
+
+</p>
+
+<h3>Step 2: Sample Values</h3>
+
+<p>
+
+\\[
+\\bar{x}=${xbar},
+\\qquad
+\\mu_0=${mu0}
+\\]
+
+</p>
+
+<p>
+
+\\[
+s=${s},
+\\qquad
+n=${n}
+\\]
+
+</p>
+
+<h3>Step 3: Difference Between Means</h3>
+
+<p>
+
+\\[
+\\bar{x}-\\mu_0
+=
+${xbar}
+-
+${mu0}
+=
+${difference.toFixed(5)}
+\\]
+
+</p>
+
+<h3>Step 4: Standard Error</h3>
+
+<p>
+
+\\[
+SE=
+\\frac{${s}}
+{\\sqrt{${n}}}
+=
+${se.toFixed(5)}
+\\]
+
+</p>
+
+<h3>Step 5: Calculate the t-statistic</h3>
+
+<p>
+
+\\[
+t=
+\\frac{
+${difference.toFixed(5)}
+}
+{
+${se.toFixed(5)}
+}
+=
+${t_stat.toFixed(5)}
+\\]
+
+</p>
+
+<h3>Step 6: Degrees of Freedom</h3>
+
+<p>
+
+\\[
+df=n-1=${n}-1=${df}
+\\]
+
+</p>
+
+<h3>Step 7: p-value</h3>
+
+<p>
+
+\\[
+p=
+${p_val}
+\\]
+
+</p>
+
+<p>
+
+(${options.value === "between" ? "Two-tailed test" : "One-tailed test"})
+
+</p>
+
+<h3>Final Answer</h3>
+
+<p style="font-size:1.4em;font-weight:bold;">
+
+\\[
+t=${t_stat.toFixed(5)}
+\\]
+
+</p>
+
+<p style="font-size:1.4em;font-weight:bold;">
+
+\\[
+p=${p_val}
+\\]
+
+</p>
+
+</div>
+`;
+let dataset = [];
+let label = [];
+for(let i = -4; i <= 4; i += 0.5){
+label.push(i.toFixed(1));
+dataset.push(jStat.studentt.pdf(i, df));
+}
+
+let limit = Math.max(4, Math.ceil(Math.abs(t_stat) + 1));
+
+let labels = [];
+let curve = [];
+
+for (let x = -limit; x <= limit; x += 0.05) {
+    labels.push(x);
+    curve.push(jStat.studentt.pdf(x, df));
+}
+
+let maxY = Math.max(...curve);
+let shadedRegion = labels.map((x, i) => {
+
+    let shade = false;
+
+    if (options.value === "less") {
+
+        shade = (x <= t_stat);
+
+    } else if (options.value === "more") {
+
+        shade = (x >= t_stat);
+
+    } else {
+
+        shade = (Math.abs(x) >= Math.abs(t_stat));
+
+    }
+
+    return {
+        x: x,
+        y: shade ? curve[i] : null
+    };
+
+});
+my_chart = new Chart("myChart", {
+
+    type: "line",
+
+    data: {
+
+        datasets: [
+            {
+                label: "Null Hypothesis",
+
+                data: [
+                    { x: 0, y: 0 },
+                    { x: 0, y: maxY }
+                ],
+
+                borderWidth: 3,
+                pointRadius: 0,
+                borderColor: "#E75480",
+                backgroundColor: "#E75480"
+            },
+            {
+                label: "t Distribution",
+
+                data: labels.map((x, i) => ({
+                    x: x,
+                    y: curve[i]
+                })),
+
+                borderWidth: 3,
+                pointRadius: 0,
+                tension: 0.4,
+
+                borderColor: "rgb(10,100,255)",
+                backgroundColor: "rgba(0,0,255,0.1)",
+
+                fill: true
+            },
+            {
+                label: "Observed t",
+
+                data: [
+                    { x: t_stat, y: 0 },
+                    { x: t_stat, y: maxY }
+                ],
+
+                borderWidth: 3,
+                pointRadius: 0,
+                borderColor: "rgb(10,100,255)",
+                backgroundColor: "rgb(10,100,255)"
+            },
+            {
+                label: "P-value",
+
+                data: shadedRegion,
+
+                borderWidth: 0,
+                pointRadius: 0,
+
+                backgroundColor: "rgb(10,100,255)",
+
+                fill: true,
+
+                tension: 0.4
+            }
+
+        ]
+
+    },
+
+    options: {
+
+        responsive: true,
+
+        plugins: {
+
+            title: {
+
+                display: true,
+
+                text: `t = ${t_stat.toFixed(4)}     p = ${p_val}`
+
+            }
+
+        },
+
+        scales: {
+
+            x: {
+
+                type: "linear",
+
+                title: {
+
+                    display: true,
+
+                    text: "t Statistic"
+
+                }
+
+            },
+
+            y: {
+
+                display: false
+
+            }
+
+        }
+
+    }
+
+});
+
+steps.style.display = "block";
+});
+
+steps.addEventListener("click",()=>{
+if(steps.textContent == "Show Steps"){
+ansSteps.innerHTML = steps_html;
+MathJax.typesetPromise();
+steps.textContent = "Hide Steps";
+}else if(steps.textContent == "Hide Steps"){
+ansSteps.innerHTML = ' ';
+steps.textContent = "Show Steps";
+}
+});
+</script>
+</body>
+</html>

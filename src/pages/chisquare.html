@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistics Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+   </script>
+   <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+<script src="statscalc.js"></script>
+<link rel="stylesheet" type="text/css" href="styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<div class="container" style="height: 500px;">
+<div class="head">
+<h1>Chi-Square Goodness of Fit</h1>
+<i class="fa-regular fa-circle-question" id="info"></i>
+<div id="infoBox"></div>
+</div>
+<h2>Testing if observed frequencies fit expected distribution.</h2>
+<div class="row">
+<label>Obs:</label>
+<input type="text" name="obs" id="p" placeholder="Enter observed frequencies" required>
+</div>
+<div class="row">
+<label>Exp:</label>
+<input type="text" name="exp" id="n" placeholder="Enter expected frequencies" required>
+</div>
+
+
+<button id="calculate">Generate</button>
+</div>
+<p id="answer"></p>
+<div class="graph">
+<canvas id="myChart"></canvas>
+</div>
+<button id="steps">Show Steps</button>
+<p id="ansSteps"></p>
+<script>
+let obsInput = document.getElementById("p");
+let expInput = document.getElementById("n");
+let submit = document.getElementById("calculate");
+let result = document.getElementById("answer");
+let steps = document.getElementById("steps");
+let ansSteps = document.getElementById("ansSteps");
+let my_chart = null;
+let steps_html;
+const info = document.getElementById("info");
+const infoBox = document.getElementById('infoBox');
+let hoverTimer;
+const desc = `
+        <h3>Chi-Square Goodness of Fit Test</h3>
+<h4>
+    Determines whether observed categorical frequencies match an expected distribution.
+</h4>
+<ul>
+    <li><b>Observed</b> → Actual counts in each category.</li>
+    <li><b>Expected</b> → Expected counts (or proportions that will be scaled).</li>
+    <li>Requirements: Expected frequencies ≥ 5 in most cells.</li>
+</ul>
+    `;
+
+function showInfo(){
+            infoBox.innerHTML = desc;
+            infoBox.classList.add("show");
+        }
+        function hideInfo(){
+            infoBox.innerHTML = "";
+            infoBox.classList.remove("show");
+
+        }
+
+        info.addEventListener("mouseenter",()=>{
+
+            hoverTimer = setTimeout(()=>{
+                showInfo();
+            },1000);
+        });
+
+        info.addEventListener("mouseleave",()=>{
+
+            clearTimeout(hoverTimer);
+        });
+
+        info.addEventListener("click",(e)=>{
+
+            e.stopPropagation();
+
+            if(infoBox.classList.contains("show")){
+                hideInfo();
+            }else{
+                showInfo();
+            }
+        });
+
+        infoBox.addEventListener("mouseenter", () => {
+            clearTimeout(hoverTimer);
+        });
+
+        infoBox.addEventListener("mouseleave", () => {
+            hideInfo();
+        });
+
+        document.addEventListener("click", () => {
+            hideInfo();
+        });
+
+submit.addEventListener("click",()=>{
+ansSteps.innerHTML = ' ';
+steps.textContent = "Show Steps";
+if(my_chart) my_chart.destroy();
+
+
+let observed, expected, chi2, df, p_val;
+try{
+    observed = obsInput.value.trim().split(/[\s,]+/).map(Number);
+    expected = expInput.value.trim().split(/[\s,]+/).map(Number);
+    if(observed.length !== expected.length || observed.some(isNaN) || expected.some(isNaN)){
+        throw "Observed and Expected must have same number of valid numbers.";
+    }
+    let totalObs = sum(observed);
+    if (
+        Math.abs(totalObs - expected.reduce((a,b)=>a+b,0))
+        > 1e-8
+    ) {
+        throw "Observed and expected totals must be equal.";
+    }
+    if(expected.some(e=>e<=0)) throw "Expected frequencies must be > 0.";
+    if(observed.some(o=>o<0)) throw "Observed frequencies must be >= 0";
+    if(observed.length < 2) throw "At least 2 categories required.";
+}catch(error){
+    alert(error);
+    return;
+}
+
+let res = chi_square_gof(observed, expected);
+chi2 = res.chi2;
+df = res.df;
+p_val = res.pvalue;
+data = res.data;
+console.log(data);
+let tableRows = data.map((row, i) => `
+<tr>
+    <td>${i + 1}</td>
+    <td>${row.observed}</td>
+    <td>${row.expected.toFixed(3)}</td>
+    <td>${Math.pow(row.observed - row.expected,2).toFixed(3)}</td>
+    <td>${row.value.toFixed(5)}</td>
+</tr>
+`).join("");
+
+p_val = (p_val < 0.00001 ? p_val.toExponential(5) : p_val.toFixed(5));
+
+result.innerHTML = `
+<div style = "height: 7em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+ font-size: 2em; font-family: monospace;">
+<span>Chi-Square Statistic</span><span>:</span><span>${chi2.toFixed(5)}</span>
+<span>df</span><span>:</span><span>${df}</span>
+<span>p-value</span><span>:</span><span>${p_val}</span>
+<span>Categories</span><span>:</span><span>${observed.length}</span>
+</div>
+`;
+
+if(data.length > 10){
+
+let trimmed = data.slice(0,9); 
+
+steps_html = `
+        <div class="steps-container">
+
+        <h2>Chi-Square Goodness of Fit Test</h2>
+
+        <p><b>Null Hypothesis:</b> The observed frequencies follow the expected distribution.</p>
+
+        <p><b>Alternative Hypothesis:</b> The observed frequencies do not follow the expected distribution.</p>
+
+        <h3>Step 1: Formula</h3>
+
+        <p>
+
+        \\[
+        \\chi^2
+        =
+        \\sum
+        \\frac{(O-E)^2}{E}
+        \\]
+
+        </p>
+
+        <h3>Step 2: Observed and Expected Frequencies</h3>
+
+        <p>
+
+        Observed:
+        \\[
+        ${observed.join(", ")}
+        \\]
+
+        </p>
+
+        <p>
+
+        Expected:
+        \\[
+        ${expected.join(", ")}
+        \\]
+
+        </p>
+
+        <h3>Step 3: Contribution of Each Category</h3>
+
+        <table class="deviation-table">
+
+                                <tr>
+                                    <th>\\(Category\\)</th>
+                                    <th>\\(O\\)</th>
+                                    <th>\\(E\\)</th>
+                                    <th>\\((O - E)^2\\)</th>
+                                    <th>\\((O - E)^2/E\\)</th>
+                                </tr>
+                                ${trimmed.map((xVal,i)=>{
+
+                            return `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td>${trimmed[i].observed}</td>
+                                    <td>${trimmed[i].expected}</td>
+                                    <td>${trimmed[i].square}</td>
+                                    <td>${trimmed[i].value}</td>
+                                </tr>
+                            `;
+
+                        }).join('')}
+
+                            <tr>
+                                <td>...</td>
+                                <td>...</td>
+                                <td>...</td>
+                                <td>...</td>
+                                <td>...</td>
+                            </tr>
+
+                            <tr>
+                                <td>${data.length}</td>
+                                <td>${data[data.length - 1].observed}</td>
+                                <td>${data[data.length - 1].expected}</td>
+                                <td>${data[data.length - 1].square}</td>
+                                <td>${data[data.length - 1].value}</td>
+                            </tr>
+
+        </table>
+
+        <h3>Step 4: Sum the Contributions</h3>
+
+        <p>
+
+        \\[
+        \\chi^2
+        =
+        ${chi2.toFixed(5)}
+        \\]
+
+        </p>
+
+        <h3>Step 5: Degrees of Freedom</h3>
+
+        <p>
+
+        \\[
+        df
+        =
+        k-1
+        =
+        ${observed.length}-1
+        =
+        ${df}
+        \\]
+
+        </p>
+
+        <h3>Step 6: p-value</h3>
+
+        <p>
+
+        \\[
+        p
+        =
+        ${p_val}
+        \\]
+
+        </p>
+
+        <h3>Final Answer</h3>
+
+        <p style="font-size:1.4em;font-weight:bold;">
+
+        \\[
+        \\chi^2
+        =
+        ${chi2.toFixed(5)}
+        \\]
+
+        </p>
+
+        <p style="font-size:1.4em;font-weight:bold;">
+
+        \\[
+        p
+        =
+        ${p_val}
+        \\]
+
+        </p>
+
+        </div>
+        `;
+    }else{
+        steps_html = `
+        <div class="steps-container">
+
+        <h2>Chi-Square Goodness of Fit Test</h2>
+
+        <p><b>Null Hypothesis:</b> The observed frequencies follow the expected distribution.</p>
+
+        <p><b>Alternative Hypothesis:</b> The observed frequencies do not follow the expected distribution.</p>
+
+        <h3>Step 1: Formula</h3>
+
+        <p>
+
+        \\[
+        \\chi^2
+        =
+        \\sum
+        \\frac{(O-E)^2}{E}
+        \\]
+
+        </p>
+
+        <h3>Step 2: Observed and Expected Frequencies</h3>
+
+        <p>
+
+        Observed:
+        \\[
+        ${observed.join(", ")}
+        \\]
+
+        </p>
+
+        <p>
+
+        Expected:
+        \\[
+        ${expected.join(", ")}
+        \\]
+
+        </p>
+
+        <h3>Step 3: Contribution of Each Category</h3>
+
+        <table class="deviation-table">
+
+                                <tr>
+                                    <th>\\(Category\\)</th>
+                                    <th>\\(O\\)</th>
+                                    <th>\\(E\\)</th>
+                                    <th>\\((O - E)^2\\)</th>
+                                    <th>\\(\\chi2 = (O - E)^2/E\\)</th>
+                                </tr>
+                                ${data.map((xVal,i)=>{
+
+                            return `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td>${data[i].observed}</td>
+                                    <td>${data[i].expected}</td>
+                                    <td>${data[i].square}</td>
+                                    <td>${data[i].value}</td>
+                                </tr>
+                            `;
+
+                        }).join('')}
+
+                            
+
+        </table>
+
+        <h3>Step 4: Sum the Contributions</h3>
+
+        <p>
+
+        \\[
+        \\sum \\chi^2
+        =
+        ${chi2.toFixed(5)}
+        \\]
+
+        </p>
+
+        <h3>Step 5: Degrees of Freedom</h3>
+
+        <p>
+
+        \\[
+        df
+        =
+        k-1
+        =
+        ${observed.length}-1
+        =
+        ${df}
+        \\]
+
+        </p>
+
+        <h3>Step 6: p-value</h3>
+
+        <p>
+
+        \\[
+        p
+        =
+        ${p_val}
+        \\]
+
+        </p>
+
+        <h3>Final Answer</h3>
+
+        <p style="font-size:1.4em;font-weight:bold;">
+
+        \\[
+        \\chi^2
+        =
+        ${chi2.toFixed(5)}
+        \\]
+
+        </p>
+
+        <p style="font-size:1.4em;font-weight:bold;">
+
+        \\[
+        p
+        =
+        ${p_val}
+        \\]
+
+        </p>
+
+        </div>
+        `;
+
+    }
+
+
+let labels = observed.map((_,i)=> `Cat ${i+1}`);
+my_chart = new Chart("myChart",{
+type: 'bar',
+data: {
+labels: labels,
+datasets: [
+{ label: "Observed", data: observed, backgroundColor: 'rgb(10,100,255)' },
+{ label: "Expected", data: expected, backgroundColor: 'rgb(255,100,10)' }
+]
+}
+});
+steps.style.display = "block";
+});
+
+steps.addEventListener("click",()=>{
+if(steps.textContent == "Show Steps"){
+ansSteps.innerHTML = steps_html;
+MathJax.typesetPromise();
+steps.textContent = "Hide Steps";
+}else if(steps.textContent == "Hide Steps"){
+ansSteps.innerHTML = ' ';
+steps.textContent = "Show Steps";
+}
+});
+</script>
+</body>
+</html>

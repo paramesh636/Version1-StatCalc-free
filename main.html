@@ -1,337 +1,347 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Statistics Calculator</title>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-	<script src="src/keywords.js"></script>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistics Calculator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="src/keywords.js"></script>
 </head>
-
 <style>
-	body{
-		padding: 0;
-		margin: 0;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		height: 96.8vh;
-		
-	}
+body{
+padding: 0;
+margin: 0;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 96.8vh;
+}
+.sidebar{
+height: 100%;
+width: 400px;
+padding: 20px;
+display: flex;
+flex-direction: column;
+align-items: center;
+box-shadow: 0 0 10px grey;
+overflow-y: auto;
+transition: all 0.3s ease;
+scroll-behavior: smooth;
+position: relative;
+}
+.sidebar.active{
+width: 50px;
+}
 
-	.sidebar{
-		height: 100%;
-		width: 400px;
-		padding: 20px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		box-shadow: 0 0 10px grey;
-		overflow-y: auto;
-		transition: all 0.3s ease;
-		scroll-behavior: smooth;
-		
+.content{
+width: 100%;
+height: 100%;
+padding: 20px;
+}
 
-	}
+object{
+width: 100%;
+height: 100%;
+}
 
-	.sidebar.active{
-		width: 50px;
-	}
+.top-header {
+    width: 90%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    margin-top: 25px;
+}
 
-	.sidebar.active button{
-		display: none;
-	}
-
-	.content{
-		width: 100%;
-		height: 100%;
-		padding: 20px;
-	}
-
-	.content.active{
-		display: none;
-	}
-
-	object{
-		width: 100%;
-		height: 100%;
-	}
-
-	.search{
-		height: 40px;
-		width: 90%;
-		border-radius: 10px;
-		display: flex;
-		justify-content: space-evenly;
-		align-items: center;
-		flex-shrink: 0;
-		background: white;
-		border: 1px solid grey;
-
-	}
-	.search.active{
-		display: none;
-	}
-
-	.search:focus-within{
-		background: rgb(230,230,230);
-	}
-
-	.search input{
-		background: transparent;
-		border: none;
-		height: 100%;
-		width: 70%;
-		font-family: monospace;
-		font-size: 16px;
-		outline: none;
-		justify-content: center;
-		align-items: center;
-	}
-
-	input::placeholder{
-		color: black;
-		text-align: left;
-	}
+#menu-btn, #minimize {
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+#menu-btn:hover, #minimize:hover {
+    background: rgb(230,230,230);
+}
 
 
-	#minimize{
-		margin-left: auto;
-		margin-right: 16px;
-		margin-top: 20px;
-		margin-bottom: 20px;
-		height: 40px;
-		width: 40px;
-		border-radius: 50%;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
 
-	.heading{
-		width: 90%;
-		text-align: left;
-		margin-top: 30px;
-		margin-bottom: 10px;
-		font-size: 16px;
-		font-family: monospace;
-		color: grey;
-	}
+.search{
+height: 40px;
+width: 90%;
+border-radius: 10px;
+display: flex;
+justify-content: space-evenly;
+align-items: center;
+flex-shrink: 0;
+background: white;
+border: 1px solid grey;
+}
 
-	.heading.active{
-		display: none;
-	}
+.search:focus-within{
+background: rgb(230,230,230);
+}
+.search input{
+background: transparent;
+border: none;
+height: 100%;
+width: 70%;
+font-family: monospace;
+font-size: 16px;
+outline: none;
+}
+input::placeholder{
+color: black;
+text-align: left;
+}
 
-	.sidebar button{
-		width: 90%;
-		height: 50px;
-		font-weight: bold;
-		font-size: 16px;
-		border: none;
-		background: transparent;
-		text-align: left;
-		border-radius: 10px;
-		padding: 15px;
+.heading{
+width: 90%;
+text-align: left;
+margin-top: 30px;
+margin-bottom: 10px;
+font-size: 16px;
+font-family: monospace;
+color: grey;
+}
 
-	}
+.sidebar.active .search,
+.sidebar.active .heading,
+.sidebar.active button:not(#minimize),
+.sidebar.active #menu-btn {
+    display: none;
+}
 
-	.sidebar button:hover{
-		cursor: pointer;
-		background: rgb(230,230,230);
-	}
+.sidebar button{
+width: 90%;
+height: 50px;
+font-weight: bold;
+font-size: 16px;
+border: none;
+background: transparent;
+text-align: left;
+border-radius: 10px;
+padding: 15px;
+}
+.sidebar button:hover{
+cursor: pointer;
+background: rgb(230,230,230);
+}
+.line{
+width: 90%;
+border: 1px solid rgb(225,225,225);
+margin-bottom: 10px
+}
+button{
+font-family: monospace;
+}
 
-	.line{
-		width: 90%;
-		border: 1px solid rgb(225,225,225);
-		margin-bottom: 10px
-	}
-
-	button{
-		font-family: monospace;
-	}
-
-	::-webkit-scrollbar {
-	    width: 4px;
-	}
-
-	::-webkit-scrollbar-track {
-	    background: transparent;
-	}
-
-	::-webkit-scrollbar-thumb {
-	    background: rgba(255,255,255,0.2);
-	    border-radius: 999px;
-	}
-
-	button.highlight {
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 999px;
+}
+button.highlight {
     background: #e0f0ff;
     border-left: 4px solid #3498db;
     color: #2c3e50;
     transition: all 0.3s ease;
-	}
-
-	button.highlight:hover {
-	    background: #c0e0ff;
-	}
-
-
+}
+button.highlight:hover {
+    background: #c0e0ff;
+}
+.dropdown {
+    position: absolute;
+    top: 70px;
+    left: 20px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    width: 180px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 100;
+}
+.dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.dropdown a {
+    display: block;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #333;
+    font-family: monospace;
+}
+.dropdown a:hover {
+    background: rgb(230,230,230);
+}
 </style>
-
-
 <body>
+<div class="sidebar">
+    <!-- Top Header with Menu and Minimize buttons -->
+    <div class="top-header">
+        <button id="menu-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        <button id="minimize"><i class="fa-solid fa-backward-step"></i></button>
+    </div>
 
-	<div class="sidebar">
-		<button id="minimize"><i class="fa-solid fa-backward-step"></i></button>
-		<div class="search">
-			<i class="fa fa-search"></i>
+    <div class="dropdown" id="dropdown">
+        <a href="https://your-purchase-link.com" target="_blank">Purchase</a>
+    </div>
 
-			<input id="search" type="text" name="search" placeholder="   Search">
-		</div>
-		<div class="heading">Descriptive Stats</div>
-		<button onclick="loadPage('src/correlation.html')">Correlation(Pearson)</button>
-		<div class="line"></div>
-		<button onclick="loadPage('src/histogram.html')">Central Tendency</button>
-		<div class="line"></div>
-		<button onclick="loadPage('src/sd.html')">Standard Deviation</button>
-		<div class="line"></div>
-		<button onclick="loadPage('src/quartiles.html')">Quartiles and IQR</button>
-		<div class="line"></div>
-		<button onclick="loadPage('src/zscore.html')">Z-Score</button>
-		<div class="line"></div>
-		<div class="heading">Regression</div>
-		<button onclick="loadPage('src/linear_curve_fit.html')">Linear Regression</button>
-		<div class="line"></div>
-		<button onclick="loadPage('src/quadratic_curve_fit.html')">Quadratic Regression</button>
-		<div class="line"></div>
-		<div class="heading">Probability</div>
-		<button onclick="loadPage('src/normaldist.html')">Normal Distribution</button>
-		<div class="line"></div>
-		<button onclick="loadPage('src/binomial.html')">Binomial Distribution</button>
-		<div class="line"></div>
-		<div class="heading">Misc</div>
-		<button onclick="loadPage('src/collatz.html')">Collatz Conj.</button>
-		<div class="line"></div>
-		<button onclick="loadPage('src/visualize.html')">Logistic Map</button>
-		<div class="line"></div>
-	</div>
+    <div class="search">
+        <i class="fa fa-search"></i>
+        <input id="search" type="text" name="search" placeholder=" Search">
+    </div>
+    <div class="heading">Descriptive Stats</div>
+    <button onclick="loadPage('src/pages/correlation.html')">Correlation(Pearson)</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/histogram.html')">Central Tendency</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/sd.html')">Standard Deviation</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/quartiles.html')">Quartiles and IQR</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/zscore.html')">Z-Score</button>
+    <div class="line"></div>
+    <div class="heading">Regression</div>
+    <button onclick="loadPage('src/pages/linear_curve_fit.html')">Linear Regression</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/quadratic_curve_fit.html')">Quadratic Regression</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/logregress.html')">Logistic Regression</button>
+    <div class="line"></div>
+    <div class="heading">Probability</div>
+    <button onclick="loadPage('src/pages/normaldist.html')">Normal Dist.</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/binomial.html')">Binomial Dist.</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/ttest.html')">T-Test(One-Sample)</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/ttest2.html')">T-Test(Two-Sample)</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/chisquare.html')">Chi-Square Test</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/manwhit.html')">Mann-Whitney U-Test</button>
+    <div class="line"></div>
+    <div class="heading">Misc</div>
+    <button onclick="loadPage('src/pages/collatz.html')">Collatz Conj.</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/visualize.html')">Logistic Map</button>
+    <div class="line"></div>
+</div>
+<div class="content">
+    <object id="page" type="text/html" data="src/pages/startup.html"></object>
+</div>
 
-	<div class="content">
-		<object id="page" type="text/html" data="src/startup.html"></object>
-	</div>
-	<script>
-		let page = document.getElementById('page');
+<script>
+let page = document.getElementById('page');
 
-		function loadPage(filename){
-			page.data = filename;
-		}
+function loadPage(filename){
+    page.data = filename;
+}
 
-		let minimize = document.getElementById('minimize');
-		let sidebar = document.querySelector('.sidebar');
-		let search = document.querySelector('.search');
-		let headings = document.querySelectorAll('.heading');
-		let icon = minimize.querySelector('i');
-		const searchInput = document.getElementById('search');
-		const menuButtons = Array.from(document.querySelectorAll('.sidebar button')).filter(btn => !btn.id);
+let minimize = document.getElementById('minimize');
+let sidebar = document.querySelector('.sidebar');
+let search = document.querySelector('.search');
+let headings = document.querySelectorAll('.heading');
+let icon = minimize.querySelector('i');
 
-		minimize.addEventListener('click',()=>{
-			sidebar.classList.toggle('active');
-			search.classList.toggle('active');
-			headings.forEach(heading => {
-				heading.classList.toggle('active');
-			});
-			if(sidebar.classList.contains('active')){
-				icon.classList.remove("fa-backward-step");
-				icon.classList.add("fa-forward-step");
-			}else{
-				icon.classList.remove("fa-forward-step");
-				icon.classList.add("fa-backward-step");
-			}
-		});
+minimize.addEventListener('click',()=>{
+    sidebar.classList.toggle('active');
+    search.classList.toggle('active');
+    headings.forEach(heading => heading.classList.toggle('active'));
+    
+    if(sidebar.classList.contains('active')){
+        icon.classList.remove("fa-backward-step");
+        icon.classList.add("fa-forward-step");
+    } else {
+        icon.classList.remove("fa-forward-step");
+        icon.classList.add("fa-backward-step");
+    }
+});
 
-		function scrollToButton(button) {
-		    if (!button) return;
-		    
-		    requestAnimationFrame(() => {
-		        const containerRect = sidebar.getBoundingClientRect();
-		        const buttonRect = button.getBoundingClientRect();
-		        
-		        const relativeTop = buttonRect.top - containerRect.top + sidebar.scrollTop;
-		        const targetScroll = relativeTop - (sidebar.clientHeight / 2) + (buttonRect.height / 2);
-		        
-		        sidebar.scrollTop = Math.max(0, targetScroll);
-		    });
-		}
+// New Menu Button + Dropdown
+const menuBtn = document.getElementById('menu-btn');
+const dropdown = document.getElementById('dropdown');
 
-		function performSearch(){
-
-			const query = searchInput.value.toLowerCase().trim();
-			menuButtons.forEach(b => b.classList.remove('highlight'));
-
-			if(!query){
-				return;
-			}
-
-			let bestMatch = null;
-			let bestScore = 0;
-
-			keywords.forEach(t => {
-
-				
-				let score = 0;
-
-				t.keywords.forEach(k => {
-
-					if(k.includes(query)){
-						score++;
-					}
-					if(query.includes(k)){
-						score++;
-					}
-				});
-
-				if(score > bestScore){
-					bestScore = score;
-					bestMatch = t.topic;
-				}
-
-			});
-
-			menuButtons.forEach(b => {
-
-				if(b.textContent.toLowerCase() == bestMatch){
-					bestMatch = b;
-				}
-			});
+menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('show');
+});
 
 
+document.addEventListener('click', () => {
+    dropdown.classList.remove('show');
+});
 
+const searchInput = document.getElementById('search');
+const menuButtons = Array.from(document.querySelectorAll('.sidebar button')).filter(btn => !btn.id);
 
-	        if (bestMatch && bestScore > 0) {
+function scrollToButton(button) {
+    if (!button) return;
+    requestAnimationFrame(() => {
+        const containerRect = sidebar.getBoundingClientRect();
+        const buttonRect = button.getBoundingClientRect();
+        const relativeTop = buttonRect.top - containerRect.top + sidebar.scrollTop;
+        const targetScroll = relativeTop - (sidebar.clientHeight / 2) + (buttonRect.height / 2);
+        sidebar.scrollTop = Math.max(0, targetScroll);
+    });
+}
 
-	            bestMatch.classList.add('highlight');
-	            scrollToButton(bestMatch);
-	        }
+function performSearch(){
+    const query = searchInput.value.toLowerCase().trim();
+    menuButtons.forEach(b => b.classList.remove('highlight'));
+    if(!query) return;
 
+    let bestMatch = null;
+    let bestScore = 0;
 
-		}
+    keywords.forEach(t => {
+        let score = 0;
+        t.keywords.forEach(k => {
+            if(k.includes(query)) score++;
+            if(query.includes(k)) score++;
+        });
+        if(score > bestScore){
+            bestScore = score;
+            bestMatch = t.topic;
+        }
+    });
 
-		searchInput.addEventListener('input',performSearch);
-		searchInput.addEventListener('keydown',(e) => {
+    menuButtons.forEach(b => {
+        if(b.textContent.toLowerCase() === bestMatch){
+            bestMatch = b;
+        }
+    });
 
-			if(e.key == 'Enter'){
-				const highlighted = document.querySelector('.sidebar button.highlight');
-				if(highlighted){
-					highlighted.click();
-				}
-			}
-		});
-		document.addEventListener('click',()=>{
+    if (bestMatch && bestScore > 0) {
+        bestMatch.classList.add('highlight');
+        scrollToButton(bestMatch);
+    }
+}
 
-			menuButtons.forEach(b => b.classList.remove('highlight'));
-		});
-
-	</script>
+searchInput.addEventListener('input', performSearch);
+searchInput.addEventListener('keydown',(e) => {
+    if(e.key == 'Enter'){
+        const highlighted = document.querySelector('.sidebar button.highlight');
+        if(highlighted) highlighted.click();
+    }
+});
+</script>
 </body>
 </html>
