@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Statistics Calculator</title>
+	<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	
+  	<script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  	</script>
+  	<script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+	<script src="statscalc.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+<body>
+
+	<div class="container" style="height: 600px;">
+		
+		<div class="head">
+			<h1>Normal Distribution</h1>
+			<i class="fa-regular fa-circle-question" id="info"></i>
+			<div id="infoBox"></div>
+		</div>
+		<h2>Bell-shaped and centered around the mean.</h2>
+		<div class="row">
+			<label>Mean:</label>
+			<input type="text" name="m" id="m" placeholder="Enter Mean Value" required>
+		</div>
+		<div class="row">
+			<label>SD:</label>
+			<input type="text" name="y" id="sd" placeholder="Enter Standard Deviation Value" required>
+		</div>
+		<div class="row">
+			<label>Type:</label>
+			<select name="Choose Type" id="select">
+				<option value="left-tail">P(X < x) (Left-Tail)</option>
+				<option value="right-tail">P(X > x) (Right-Tail)</option>
+				<option value="two-tail">P(a < X < b) (Two-Tail)</option>
+				<option value="prob">X given Probability</option>
+			</select>
+		</div>
+		<div class="row">
+			<label>X:</label>
+			<input type="text" name="x" id="x" placeholder="Enter X value" required>
+
+		</div>
+		<button id="calculate">Generate</button>
+	</div>
+
+	<p id="answer"></p>
+
+
+	<div class="graph">
+		<canvas id="myChart"></canvas>
+	</div>
+
+	<button id="steps">Show Steps</button>
+	<p id="ansSteps"></p>
+
+	<script>
+		
+		let x = document.getElementById("x");
+		let s = document.getElementById("sd");
+		let m = document.getElementById("m");
+		let submit = document.getElementById("calculate");
+		let result = document.getElementById("answer");
+		let steps = document.getElementById("steps");
+		let ansSteps = document.getElementById("ansSteps");
+		let my_chart = null;
+		let options = document.getElementById("select");
+		let steps_html;
+		const info = document.getElementById("info");
+		const infoBox = document.getElementById('infoBox');
+		let hoverTimer;
+		const desc =  `
+			        <h3>Normal Distribution</h3>
+					<h4>
+					    A symmetric, bell-shaped probability distribution where most values cluster around the mean.
+					</h4>
+					<ul>
+					    <li>
+					        <b>Mean (μ)</b> → The center of the distribution. In a normal distribution, the mean, median, and mode are equal.
+					    </li>
+					    <li>
+					        <b>Symmetry</b> → Values are evenly distributed around the mean, with equal spread on both sides.
+					    </li>
+					    <li>
+					        <b>Standard Deviation (σ)</b> → Controls the spread of the distribution. Larger values produce a wider bell curve.
+					    </li>
+					    <li>
+					        <b>68–95–99.7 Rule</b> → Approximately 68% of values lie within 1 standard deviation of the mean, 95% within 2, and 99.7% within 3.
+					    </li>
+					    <li>
+					        It is widely used to model natural phenomena, measurement errors, test scores, and many real-world datasets.
+					    </li>
+					</ul>
+			    `;
+
+		function showInfo(){
+			infoBox.innerHTML = desc;
+			infoBox.classList.add("show");
+		}
+		function hideInfo(){
+			infoBox.innerHTML = "";
+			infoBox.classList.remove("show");
+
+		}
+
+		info.addEventListener("mouseenter",()=>{
+
+			hoverTimer = setTimeout(()=>{
+				showInfo();
+			},1000);
+		});
+
+		info.addEventListener("mouseleave",()=>{
+
+			clearTimeout(hoverTimer);
+		});
+
+		info.addEventListener("click",(e)=>{
+
+			e.stopPropagation();
+
+			if(infoBox.classList.contains("show")){
+				hideInfo();
+			}else{
+				showInfo();
+			}
+		});
+
+		infoBox.addEventListener("mouseenter", () => {
+		    clearTimeout(hoverTimer);
+		});
+
+		infoBox.addEventListener("mouseleave", () => {
+		    hideInfo();
+		});
+
+		document.addEventListener("click", () => {
+		    hideInfo();
+		});
+
+		options.addEventListener("click",()=>{
+			if(options.value == 'two-tail'){
+				x.placeholder = "Enter values of a and b";
+			}else if(options.value == 'prob'){
+				x.placeholder = "Enter probability value";
+			}else{
+				x.placeholder = "Enter X value";
+			}
+		});
+
+
+		submit.addEventListener("click",()=>{
+
+			ansSteps.innerHTML = ' ';
+			steps.textContent = "Show Steps";
+
+			if(my_chart){
+				my_chart.destroy();
+			}
+
+			let mean_x = parseFloat(m.value);
+			let sd = parseFloat(s.value);
+			let target;
+			let z;
+			let prob;
+			let dist = normal_distribution(mean_x,sd);
+			let maxY = Math.max(...dist.curve);
+			let curve_data = dist.labels.map((x, i) => ({
+							x: x,
+							y: dist.curve[i]
+						}));
+
+			let shadedRegion;
+
+			try{
+
+				if(m.value.trim() === "" || s.value.trim() === "" || x.value.trim() === ""){
+				    throw "Please enter some data.";
+				}
+
+			    x_value = x.value.trim().split(/[\s,]+/).map(Number);
+			    m_value = m.value.trim().split(/[\s,]+/).map(Number);
+			    s_value = s.value.trim().split(/[\s,]+/).map(Number);
+
+
+			    if(x_value.length > 1){
+			    	if(options.value == 'two-tail'){
+				    	if(x_value.length != 2){
+				    		throw "Only two X values allowed."
+				    	}
+				    }else{ 
+			    		throw "Only one X value allowed."
+			    	}
+			    }
+
+			    if(x_value.length == 1 && options.value == 'two-tail'){
+
+			    	throw "Two X values are required."
+			    }
+			 
+			
+			    if(m_value.length > 1){
+			    	throw "Only one mean value allowed."
+			    }
+			    if(s_value.length > 1){
+			    	throw "Only one SD value allowed."
+			    }
+
+			    if(x_value.some(Number.isNaN) || Number.isNaN(Number(m.value)) || Number.isNaN(Number(s.value))){
+			        throw "Only numerical values are allowed.";
+			    }
+
+			}catch(error){
+
+			    alert(error);
+			    return;
+
+			}
+
+			
+
+			if(options.value == 'left-tail'){
+
+				target = parseFloat(x.value);
+				z = ((target - mean_x)/sd).toFixed(5);
+				prob = (jStat.normal.cdf(target,mean_x,sd)).toFixed(5);
+				result.innerHTML = `
+					<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>Z-Score</span><span>:</span><span>${z}</span>
+						<span>Probability</span><span>:</span><span>${prob}</span>
+					</div>
+				`;
+				shadedRegion = dist.labels.map((x, i) => {
+
+					if(x <= target){
+						return {
+							x: x,
+							y: dist.curve[i]
+						};
+					}
+
+					return {
+						x: x,
+						y: null
+					};
+
+				});
+
+			}else if(options.value == 'right-tail'){
+
+				target = parseFloat(x.value);
+				z = ((target - mean_x)/sd).toFixed(5);
+				prob = (1 - jStat.normal.cdf(target,mean_x,sd)).toFixed(5);
+				result.innerHTML = `
+					<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>Z-Score</span><span>:</span><span>${z}</span>
+						<span>Probability</span><span>:</span><span>${prob}</span>
+					</div>
+				`;
+				shadedRegion = dist.labels.map((x, i) => {
+
+					if(x >= target){
+						return {
+							x: x,
+							y: dist.curve[i]
+						};
+					}
+
+					return {
+						x: x,
+						y: null
+					};
+
+				});
+
+
+			}else if(options.value == 'two-tail'){
+
+				target = x.value.split(',').map(Number);
+				let z1 = ((target[1] - mean_x)/sd).toFixed(5);
+				let z2 = ((target[0] - mean_x)/sd).toFixed(5);
+				let upper = jStat.normal.cdf(target[1],mean_x,sd);
+				let lower = jStat.normal.cdf(target[0],mean_x,sd);
+				prob = (upper - lower).toFixed(5);
+				result.innerHTML = `
+					<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>Z-Score(Upper)</span><span>:</span><span>${z1}</span>
+						<span>Z-Score(Lower)</span><span>:</span><span>${z2}</span>
+						<span>Probability</span><span>:</span><span>${prob}</span>
+					</div>
+				`;
+
+				shadedRegion = dist.labels.map((x, i) => {
+
+					if(x >= target[0] && x <= target[1]){
+						return {
+							x: x,
+							y: dist.curve[i]
+						};
+					}
+
+					return {
+						x: x,
+						y: null
+					};
+
+				});
+
+			}else if(options.value == 'prob'){
+
+				prob = parseFloat(x.value);
+				if(prob > 1){
+					prob = prob / 100;
+				}
+				z = (jStat.normal.inv(prob,0,1).toFixed(5));
+				target = (mean_x + (z * sd)).toFixed(5);
+				result.innerHTML = `
+					<div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>Z-Score</span><span>:</span><span>${z}</span>
+						<span>X</span><span>:</span><span>${target}</span>
+					</div>
+				`;
+				shadedRegion = dist.labels.map((x, i) => {
+
+					if(x <= target){
+						return {
+							x: x,
+							y: dist.curve[i]
+						};
+					}
+
+					return {
+						x: x,
+						y: null
+					};
+
+				});
+
+			}
+
+		
+
+		
+
+		steps.style.display = "block";
+
+		my_chart = new Chart("myChart", {
+
+			type: 'line',
+
+			data: {
+
+				datasets: [
+					{
+						label: 'Mean',
+
+						data: [
+							{x: mean_x, y: 0},
+							{x: mean_x, y: maxY}
+						],
+
+						borderWidth: 3,
+						pointRadius: 0,
+						borderColor: '#E75480',
+						backgroundColor: '#E75480'
+					},
+					{
+						label: 'Normal Distribution',
+						data: curve_data,
+						borderWidth: 3,
+						pointRadius: 0,
+						tension: 0.4,
+						borderColor: 'rgb(10,100,255)',
+						backgroundColor: 'rgba(0,0,255,0.1)',
+						fill: true
+					},
+					{
+						label: 'Probability Region',
+
+						data: shadedRegion,
+
+						borderWidth: 0,
+						pointRadius: 0,
+
+						backgroundColor: 'rgb(10,100,255)',
+
+						fill: true,
+
+						tension: 0.4
+					},
+
+				]
+
+			},
+
+			options: {
+
+				responsive: true,
+				scales: {
+
+					x: {
+						type: 'linear',
+						title: {
+							display: true,
+							text: 'Values'
+						}
+					},
+
+					y: {
+						display: false
+					}
+
+				}
+
+			}
+
+		});
+
+		if(options.value == 'left-tail'){
+					steps_html = `
+					<div class="steps-container">
+
+						<h2>Left-Tail Normal Distribution</h2>
+
+						<h3>Step 1: Convert X to Z-Score</h3>
+
+						<p>
+							Formula:
+						</p>
+
+						<p>
+							\\[
+							z = \\frac{x - \\mu}{\\sigma}
+							\\]
+						</p>
+
+						<p>
+							Substitute the values:
+						</p>
+
+						<p>
+							\\[
+							z =
+							\\frac{
+							${target} - ${mean_x}
+							}{
+							${sd}
+							}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							z = ${z}
+							\\]
+						</p>
+
+						<h3>Step 2: Find the Left-Tail Probability</h3>
+
+						<p>
+							Using the normal cumulative distribution:
+						</p>
+
+						<p>
+							\\[
+							P(X < ${target}) = P(Z < ${z})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P = ${prob}
+							\\]
+						</p>
+
+						<h3>Final Answer</h3>
+
+						<p style="font-size:1.3em;font-weight:bold;">
+							\\[
+							P(X < ${target}) = ${prob}
+							\\]
+						</p>
+
+					</div>
+					`;
+
+				}else if(options.value == 'right-tail'){
+
+					steps_html = `
+					<div class="steps-container">
+
+						<h2>Right-Tail Normal Distribution</h2>
+
+						<h3>Step 1: Convert X to Z-Score</h3>
+
+						<p>
+							\\[
+							z = \\frac{x - \\mu}{\\sigma}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							z =
+							\\frac{
+							${target} - ${mean_x}
+							}{
+							${sd}
+							}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							z = ${z}
+							\\]
+						</p>
+
+						<h3>Step 2: Find the Right-Tail Probability</h3>
+
+						<p>
+							The right-tail probability is:
+						</p>
+
+						<p>
+							\\[
+							P(X > x) = 1 - P(X < x)
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P(X > ${target})
+							=
+							1 - P(Z < ${z})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P = ${prob}
+							\\]
+						</p>
+
+						<h3>Final Answer</h3>
+
+						<p style="font-size:1.3em;font-weight:bold;">
+							\\[
+							P(X > ${target}) = ${prob}
+							\\]
+						</p>
+
+					</div>
+					`;
+
+				}else if(options.value == 'two-tail'){
+
+					steps_html = `
+					<div class="steps-container">
+
+						<h2>Two-Tail Normal Distribution</h2>
+
+						<h3>Step 1: Convert Both Values to Z-Scores</h3>
+
+						<p>
+							Lower Bound:
+						</p>
+
+						<p>
+							\\[
+							z_1 =
+							\\frac{
+							${target[0]} - ${mean_x}
+							}{
+							${sd}
+							}
+							=
+							${z2}
+							\\]
+						</p>
+
+						<p>
+							Upper Bound:
+						</p>
+
+						<p>
+							\\[
+							z_2 =
+							\\frac{
+							${target[1]} - ${mean_x}
+							}{
+							${sd}
+							}
+							=
+							${z1}
+							\\]
+						</p>
+
+						<h3>Step 2: Find the Area Between the Two Values</h3>
+
+						<p>
+							\\[
+							P(${target[0]} < X < ${target[1]})
+							=
+							P(Z < ${z1})
+							-
+							P(Z < ${z2})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							P = ${prob}
+							\\]
+						</p>
+
+						<h3>Final Answer</h3>
+
+						<p style="font-size:1.3em;font-weight:bold;">
+							\\[
+							P(${target[0]} < X < ${target[1]})
+							=
+							${prob}
+							\\]
+						</p>
+
+					</div>
+					`;
+
+				}else if(options.value == 'prob'){
+
+					steps_html = `
+					<div class="steps-container">
+
+						<h2>Finding X from a Given Probability</h2>
+
+						<p>
+							We are given the probability:
+						</p>
+
+						<p>
+							\\[
+							P(X < x) = ${prob}
+							\\]
+						</p>
+
+						<h3>Step 1: Use the Inverse Normal Distribution</h3>
+
+						<p>
+							We use the inverse cumulative normal function:
+						</p>
+
+						<p>
+							\\[
+							x = \\mu + z\\sigma
+							\\]
+						</p>
+
+						<h3>Step 2: Find Z-Score from Probability</h3>
+
+						<p>
+							\\[
+							P = ${prob}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							Z = ${z}
+							\\]
+						</p>
+
+						<h3>Step 3: Substitute the Values</h3>
+
+						<p>
+							\\[
+							\\mu = ${mean_x}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							\\sigma = ${sd}
+							\\]
+						</p>
+
+						<p>
+							\\[
+							z = ${z}
+							\\]
+						</p>
+
+						<p>
+							\\[ 
+							x = ${mean_x} + (${z})(${sd})
+							\\]
+						</p>
+
+						<p>
+							\\[
+							x = ${target}
+							\\]
+						</p>
+
+						<h3>Final Answer</h3>
+
+						<p style="font-size:1.3em;font-weight:bold;">
+							\\[
+							x = ${target}
+							\\]
+						</p>
+
+					</div>
+					`;
+
+				}
+
+	});
+
+	steps.addEventListener("click",()=>{
+
+			if(steps.textContent == "Show Steps"){
+
+				ansSteps.innerHTML = steps_html;
+				MathJax.typesetPromise();
+				steps.textContent = "Hide Steps";
+			}else if(steps.textContent == "Hide Steps"){
+				ansSteps.innerHTML = ' ';
+				steps.textContent = "Show Steps";
+			}
+
+		});
+
+
+
+
+	</script>
+</body>
+</html>

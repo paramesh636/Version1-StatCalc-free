@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistics Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+   </script>
+   <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+<script src="statscalc.js"></script>
+<link rel="stylesheet" type="text/css" href="styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+<div class="container" style="height: 500px;">
+<div class="head">
+<h1>Mann-Whitney U Test</h1>
+<i class="fa-regular fa-circle-question" id="info"></i>
+<div id="infoBox"></div>
+</div>
+<h2>Non-parametric test comparing two independent samples (rank-based).</h2>
+<div class="row">
+<label>Data 1:</label>
+<input type="text" id="sample1" placeholder="Enter sample data 1" required>
+</div>
+<div class="row">
+<label>Data 2:</label>
+<input type="text" id="sample2" placeholder="Enter sample data 2" required>
+</div>
+<div class="row">
+<label>Type:</label>
+<select name="Choose Type" id="select">
+<option value="less">Hₐ: Sample 1 < Sample 2 (Left-tailed)</option>
+<option value="more">Hₐ: Sample 1 > Sample 2 (Right-tailed)</option>
+<option value="between">Hₐ: Sample 1 ≠ Sample 2 (Two-tailed)</option>
+</select>
+</div>
+<button id="calculate">Generate</button>
+</div>
+<p id="answer"></p>
+<div class="graph">
+<canvas id="myChart"></canvas>
+</div>
+<button id="steps">Show Steps</button>
+<p id="ansSteps"></p>
+<script>
+let sample1Input = document.getElementById("sample1");
+let sample2Input = document.getElementById("sample2");
+let submit = document.getElementById("calculate");
+let result = document.getElementById("answer");
+let steps = document.getElementById("steps");
+let ansSteps = document.getElementById("ansSteps");
+let my_chart = null;
+let options = document.getElementById("select");
+let steps_html;
+const info = document.getElementById("info");
+const infoBox = document.getElementById('infoBox');
+let hoverTimer;
+const desc = `
+        <h3>Mann-Whitney U Test</h3>
+<h4>
+    Non-parametric alternative to the two-sample t-test. Compares distributions of two independent samples using ranks.
+</h4>
+<ul>
+    <li>Enter raw data values for each sample (comma-separated).</li>
+    <li>Does not assume normality.</li>
+    <li>Good for small samples or ordinal data.</li>
+</ul>
+    `;
+function showInfo(){
+infoBox.innerHTML = desc;
+infoBox.classList.add("show");
+}
+function hideInfo(){
+infoBox.innerHTML = "";
+infoBox.classList.remove("show");
+}
+info.addEventListener("mouseenter",()=>{
+hoverTimer = setTimeout(()=>{
+showInfo();
+},1000);
+});
+info.addEventListener("mouseleave",()=>{
+clearTimeout(hoverTimer);
+});
+info.addEventListener("click",(e)=>{
+e.stopPropagation();
+if(infoBox.classList.contains("show")){
+hideInfo();
+}else{
+showInfo();
+}
+});
+infoBox.addEventListener("mouseenter", () => {
+    clearTimeout(hoverTimer);
+});
+infoBox.addEventListener("mouseleave", () => {
+    hideInfo();
+});
+document.addEventListener("click", () => {
+    hideInfo();
+});
+
+submit.addEventListener("click",()=>{
+ansSteps.innerHTML = ' ';
+steps.textContent = "Show Steps";
+if(my_chart){
+my_chart.destroy();
+}
+
+let sample1, sample2, u, z, p_val;
+try{
+    sample1 = sample1Input.value.trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+    sample2 = sample2Input.value.trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+    
+    if(sample1.length < 3 || sample2.length < 3){
+        throw "Each sample must have at least 3 observations.";
+    }
+}catch(error){
+    alert(error);
+    return;
+}
+
+const res = mann_whitney_u(sample1, sample2); 
+const r1 = res[1];
+const r2 = res[2];
+u = res[4]; 
+z = res[6];
+const ranks = res[0];
+
+p_val = calculate_mann_whitney_pvalue(z, options.value); 
+
+result.innerHTML = `
+<div style = "height: 9em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+ font-size: 2em; font-family: monospace;">
+<span>U Statistic</span><span>:</span><span>${u.toFixed(2)}</span>
+<span>Z (normal approx)</span><span>:</span><span>${z.toFixed(4)}</span>
+<span>p-value</span><span>:</span><span>${p_val.toFixed(5)}</span>
+<span>Sample 1 Size</span><span>:</span><span>${sample1.length}</span>
+<span>Sample 2 Size</span><span>:</span><span>${sample2.length}</span>
+<span>Rank Sum 1</span><span>:</span><span>${r1.toFixed(2)}</span>
+</div>
+`;
+
+const preview = 9;
+
+let rankTable;
+
+if(ranks.length > 10){
+
+    const trimmedRanks = ranks.slice(0, preview);
+
+    rankTable = `
+    <table class="deviation-table">
+
+        <tr>
+            <th>Value</th>
+            <th>Rank</th>
+        </tr>
+
+        ${trimmedRanks.map(r=>`
+            <tr>
+                <td>${r.val}</td>
+                <td>${r.rank}</td>
+            </tr>
+        `).join("")}
+
+        <tr>
+            <td>...</td>
+            <td>...</td>
+        </tr>
+
+        <tr>
+            <td>${ranks[ranks.length-1].val}</td>
+            <td>${ranks[ranks.length-1].rank}</td>
+        </tr>
+
+    </table>
+    `;
+
+}else{
+
+    rankTable = `
+    <table class="deviation-table">
+
+        <tr>
+            <th>Value</th>
+            <th>Rank</th>
+        </tr>
+
+        ${ranks.map(r=>`
+            <tr>
+                <td>${r.val}</td>
+                <td>${r.rank}</td>
+            </tr>
+        `).join("")}
+
+    </table>
+    `;
+
+}
+
+steps_html = `
+<div class="steps-container">
+
+<h2>Mann-Whitney U Test</h2>
+
+<p><b>Null Hypothesis:</b> The two samples come from the same distribution.</p>
+
+<p><b>Alternative:</b>
+${
+options.value === "less"
+? "Sample 1 tends to have smaller values than Sample 2."
+: options.value === "more"
+? "Sample 1 tends to have larger values than Sample 2."
+: "The two distributions are different."
+}
+</p>
+
+<h3>Step 1: Rank all observations</h3>
+
+<p>
+Combine both samples, sort them, and assign ranks.
+Tied values receive the average of their ranks.
+</p>
+
+${rankTable}
+
+<h3>Step 2: Sum of ranks</h3>
+
+<p>
+\\[
+R_1 = ${r1.toFixed(2)}
+\\]
+</p>
+
+<p>
+\\[
+R_2 = ${r2.toFixed(2)}
+\\]
+</p>
+
+<h3>Step 3: Calculate the U statistics</h3>
+
+<p>
+\\[
+U_1=n_1n_2+\\frac{n_1(n_1+1)}2-R_1
+\\]
+</p>
+
+<p>
+\\[
+=${sample1.length}\\times${sample2.length}
++
+\\frac{${sample1.length}(${sample1.length}+1)}2
+-
+${r1.toFixed(2)}
+=${res[3].toFixed(2)}
+\\]
+</p>
+
+<br>
+
+<p>
+\\[
+U_2=n_1n_2+\\frac{n_2(n_2+1)}2-R_2
+\\]
+</p>
+
+<p>
+\\[
+=${sample1.length}\\times${sample2.length}
++
+\\frac{${sample2.length}(${sample2.length}+1)}2
+-
+${r2.toFixed(2)}
+=${res[4].toFixed(2)}
+\\]
+</p>
+
+<p>
+
+\\[
+U=\\min(U_1,U_2)
+=
+${u.toFixed(2)}
+\\]
+
+</p>
+
+<h3>Step 4: Convert U to Z</h3>
+
+<p>
+
+\\[
+\\mu_U=
+\\frac{n_1n_2}{2}
+=
+${((sample1.length*sample2.length)/2).toFixed(2)}
+\\]
+
+</p>
+
+<p>
+
+\\[
+\\sigma_U=
+\\sqrt{
+\\frac{n_1n_2(n_1+n_2+1)}
+{12}
+}
+=
+${Math.sqrt((sample1.length*sample2.length*(sample1.length+sample2.length+1))/12).toFixed(5)}
+\\]
+
+</p>
+
+<p>
+
+\\[
+Z=
+\\frac{U-\\mu_U}{\\sigma_U}
+=
+${z.toFixed(5)}
+\\]
+
+</p>
+
+<h3>Step 5: Final Result</h3>
+
+<p>
+
+Degrees of freedom are not used in the Mann-Whitney U test.
+
+</p>
+
+<p>
+
+\\[
+p=${p_val.toFixed(5)}
+\\]
+
+</p>
+
+</div>
+`;
+
+let limit = Math.max(4, Math.ceil(Math.abs(z) + 1.5));
+let labels = [];
+let curve = [];
+for (let x = -limit; x <= limit; x += 0.05) {
+    labels.push(x);
+    curve.push(jStat.normal.pdf(x, 0, 1));
+}
+let maxY = Math.max(...curve);
+
+let shadedRegion = labels.map((x, i) => {
+    let shade = false;
+    if (options.value === "less") {
+        shade = (x <= z);
+    } else if (options.value === "more") {
+        shade = (x >= z);
+    } else {
+        shade = (Math.abs(x) >= Math.abs(z));
+    }
+    return { x: x, y: shade ? curve[i] : null };
+});
+
+my_chart = new Chart("myChart", {
+    type: "line",
+    data: {
+        datasets: [
+            {
+                label: "Null (Z=0)",
+                data: [{ x: 0, y: 0 }, { x: 0, y: maxY }],
+                borderWidth: 3,
+                pointRadius: 0,
+                borderColor: "#E75480"
+            },
+            {
+                label: "Standard Normal",
+                data: labels.map((x, i) => ({ x: x, y: curve[i] })),
+                borderWidth: 3,
+                pointRadius: 0,
+                tension: 0.4,
+                borderColor: "rgb(10,100,255)",
+                backgroundColor: "rgba(10,100,255,0.1)",
+                fill: true
+            },
+            {
+                label: "Observed Z",
+                data: [{ x: z, y: 0 }, { x: z, y: maxY }],
+                borderWidth: 3,
+                pointRadius: 0,
+                borderColor: "rgb(255, 99, 132)"
+            },
+            {
+                label: "P-value Region",
+                data: shadedRegion,
+                borderWidth: 0,
+                pointRadius: 0,
+                backgroundColor: "rgb(10,100,255)",
+                fill: true,
+                tension: 0.4
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: `U = ${u.toFixed(2)} | Z = ${z.toFixed(4)} | p = ${p_val.toFixed(5)}`
+            }
+        },
+        scales: {
+            x: { type: "linear", title: { display: true, text: "Z Score" } },
+            y: { display: false }
+        }
+    }
+});
+
+steps.style.display = "block";
+});
+
+function calculate_mann_whitney_pvalue(z, tail) {
+    let p = jStat.normal.cdf(Math.abs(z), 0, 1); 
+    if (tail === 'between') {
+        return 2 * (1 - p);
+    } else if (tail === 'less') {
+        return (z < 0 ? p : 1 - p); 
+    } else if (tail === 'more') {
+        return (z > 0 ? 1 - p : p);
+    }
+    return 2 * (1 - p);
+}
+
+steps.addEventListener("click",()=>{
+if(steps.textContent == "Show Steps"){
+ansSteps.innerHTML = steps_html;
+MathJax.typesetPromise();
+steps.textContent = "Hide Steps";
+}else if(steps.textContent == "Hide Steps"){
+ansSteps.innerHTML = ' ';
+steps.textContent = "Show Steps";
+}
+});
+</script>
+</body>
+</html>

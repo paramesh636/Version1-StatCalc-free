@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Statistics Calculator</title>
+	<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  	<script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  	</script>
+	<script src="../scripts/statscalc.js"></script>
+	<script src="../scripts/pdfGenerator.js"></script>
+	<script src="../scripts/ui-components.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+
+
+<body>
+
+	<div class="container" style="height:640px">
+		
+		<div class="head">
+			<h1>Logistic Regression</h1>
+			<i class="fa-regular fa-circle-question" id="info"></i>
+			<div id="infoBox"></div>
+		</div>
+		<h2>$$P = \frac{1}{1 + e^{-(ax + b)}}$$</h2>
+		<div class="row">
+			<label>X:</label>
+			<input type="text" name="x" id="x" placeholder="Enter Data" required>
+			<div class="button-wrapper">
+		        <button id="generateData">
+		            <i class="fa-solid fa-angles-up"></i>
+		        </button>
+		        <div class="dropdown" id="dropdown-generate">
+		            <a id="generate">Generate Data</a>
+		        </div>
+		    </div>
+		</div>
+		<div class="row">
+			<label>Y:</label>
+			<input type="text" name="y" id="y" placeholder="Enter Data" required>
+			<div class="button-wrapper">
+		        <button id="importCsv">
+		            <i class="fa-solid fa-file-arrow-up"></i>
+		        </button>
+		        <div class="dropdown" style="bottom:100%" id="dropdown-import">
+		            <a id="import">Import CSV</a>
+		        </div>
+		    </div>
+		</div>
+		<div class="row">
+			<label>LR:</label>
+			<input type="text" name="lr" id="lr" placeholder="Enter learning rate" required>
+			<div class="button-wrapper">
+				<button id="exportPDF">
+					<i class="fa-solid fa-arrow-up-from-bracket"></i>
+				</button>
+				<div class="dropdown" style="bottom: 100%;" id="dropdown-export">
+					<a id="export">Export PDF</a>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<label>Epoch:</label>
+			<input type="text" name="epoch" id="epoch" placeholder="Enter epoch (no. of iterations)" required>
+			<button style="background: transparent; cursor: default; margin-left: auto; width: 9%">
+
+			</button>
+		</div>
+		<button id="calculate">Calculate</button>
+	</div>
+
+	<p id="answer"></p>
+	<p id="eqn" style="font-size: 1.7em; font-family: monospace;"></p>
+
+	<div class="graph">
+		<canvas id="myChart"></canvas>
+	</div>
+
+	<button id="steps">Show Steps</button>
+	<p id="ansSteps"></p>
+
+	
+
+	<script>
+
+		let x = document.getElementById("x");
+		let y = document.getElementById("y");
+		let l = document.getElementById("lr");
+		let e = document.getElementById("epoch");
+		let submit = document.getElementById("calculate");
+		let result = document.getElementById("answer");
+		let result1 = document.getElementById("eqn");
+		let steps = document.getElementById("steps");
+		let ansSteps = document.getElementById("ansSteps");
+		let my_chart = null;
+		let steps_html;
+		const info = document.getElementById("info");
+		const infoBox = document.getElementById('infoBox');
+		let hoverTimer;
+		const genDataBtn = document.getElementById("generateData");
+		const importCsvBtn = document.getElementById("importCsv");
+		const exportPdfBtn = document.getElementById("exportPDF");
+		const dropdownGenerate = document.getElementById("dropdown-generate");
+		const dropdownImport = document.getElementById("dropdown-import");
+		const dropdownExport = document.getElementById("dropdown-export");
+		const generate = document.getElementById("generate");
+		let weights = null;
+		const desc =  `
+		    <h3>Logistic Regression</h3>
+
+		    <h4>
+		        Models the relationship between variables by predicting the probability of an outcome between 0 and 1 using a sigmoid function.
+		    </h4>
+
+		    <ul>
+		        <li>
+		            <b>Sigmoid Function</b> → Converts the linear expression <b>ax + b</b> into a probability using this formula:<b>P = 1/(1 + e<sup>-(ax+b)</sup>)</b>.
+		        </li>
+
+		        <li>
+		            <b>Coefficient (a)</b> → Determines how strongly the input variable influences the predicted probability.
+		        </li>
+
+		        <li>
+		            <b>Intercept (b)</b> → Shifts the sigmoid curve left or right and represents the model's baseline prediction.
+		        </li>
+
+		        <li>
+		            <b>Learning Rate</b> → Controls the size of each parameter update during training. Smaller values learn more slowly but are often more stable.
+		        </li>
+
+		        <li>
+		            <b>Epochs</b> → The number of complete passes through the training dataset used to optimize the model parameters.
+		        </li>
+
+		        <li>
+		            It is most suitable for binary classification problems such as spam detection, disease diagnosis, and predicting yes/no outcomes.
+		        </li>
+		    </ul>
+		`;
+
+		function showInfo(){
+			infoBox.innerHTML = desc;
+			infoBox.classList.add("show");
+		}
+		function hideInfo(){
+			infoBox.innerHTML = "";
+			infoBox.classList.remove("show");
+
+		}
+
+		info.addEventListener("mouseenter",()=>{
+
+			hoverTimer = setTimeout(()=>{
+				showInfo();
+			},1000);
+		});
+
+		info.addEventListener("mouseleave",()=>{
+
+			clearTimeout(hoverTimer);
+		});
+
+		info.addEventListener("click",(e)=>{
+
+			e.stopPropagation();
+
+			if(infoBox.classList.contains("show")){
+				hideInfo();
+			}else{
+				showInfo();
+			}
+		});
+
+		infoBox.addEventListener("mouseenter", () => {
+		    clearTimeout(hoverTimer);
+		});
+
+		infoBox.addEventListener("mouseleave", () => {
+		    hideInfo();
+		});
+
+		document.addEventListener("click", () => {
+		    hideInfo();
+		});
+
+		genDataBtn.addEventListener('click', (e) => {
+		    e.stopPropagation();
+		    dropdownGenerate.classList.toggle('show');
+		    dropdownImport.classList.remove('show');
+		    dropdownExport.classList.remove('show');
+		});
+
+		importCsvBtn.addEventListener('click', (e) => {
+		    e.stopPropagation();
+		    dropdownImport.classList.toggle('show');
+		    dropdownGenerate.classList.remove('show');
+		    dropdownExport.classList.remove('show'); 
+		});
+
+		exportPdfBtn.addEventListener("click",(e) => {
+			e.stopPropagation();
+			dropdownExport.classList.toggle('show');
+			dropdownImport.classList.remove('show');
+			dropdownGenerate.classList.remove('show');
+		});
+
+		document.addEventListener('click', () => {
+		    dropdownGenerate.classList.remove('show');
+		    dropdownImport.classList.remove('show');
+		    dropdownExport.classList.remove('show');
+		});
+
+		generate.addEventListener("click",() => {
+			const data = generateDataset(2,2,"sequential");
+			x.value = data[0][0];
+			y.value = data[0][1];
+			l.value = (data[1][0]/100).toFixed(5);
+			e.value = Math.floor(data[1][0] * 500);
+		});
+
+		document.addEventListener("keydown",(e) => {
+			if (e.key === 'Enter' && e.target.tagName !== "TEXTAREA"){
+				
+				e.preventDefault();
+
+				submit.classList.add('active-pressed');
+				setTimeout(()=> {
+					submit.classList.remove('active-pressed');
+				});
+
+				setTimeout(()=>{
+					submit.click();
+				});
+			}
+		});
+
+		document.addEventListener("DOMContentLoaded", () => {
+    
+		    UIC.initImport("x", "y");
+
+		    submit.addEventListener("click", () => {
+		        ansSteps.innerHTML = ' ';
+		        if(my_chart) my_chart.destroy();
+		        steps.textContent = "Show Steps";
+
+		        let data_x;
+		        let data_y;
+		        let lr;
+				let epoch;
+
+		        try {
+		        	const validation = StatsCalc.validateInputs(x.value, y.value);
+		            data_x = validation.x;
+		            data_y = validation.y;
+
+					try{
+
+						if(x.value.trim() === "" || y.value.trim() === "" || l.value.trim() === "" || e.value.trim() === ""){
+						    throw "Please enter some data.";
+						}
+
+						if(l.length > 1){
+							throw "Only one learning rate allowed."
+						}
+						if(e.length > 1){
+							throw "Only one epoch value allowed."
+						}
+
+					    data_x = x.value.trim().split(/[\s,]+/).map(Number);
+					    data_y = y.value.trim().split(/[\s,]+/).map(Number);
+					    lr = l.value.trim().split(/[\s,]+/).map(Number);
+					    epoch = e.value.trim().split(/[\s,]+/).map(Number);
+
+					    if(data_x.some(Number.isNaN) || data_y.some(Number.isNaN) || lr.some(Number.isNaN) || epoch.some(Number.isNaN)){
+					        throw "Only numerical values are allowed.";
+					    }
+
+					    if(data_x.length !== data_y.length){
+					        throw "Both datasets must contain the same number of values.";
+					    }
+
+					}catch(error){
+
+					    alert(error);
+					    return;
+
+					}
+
+			let l_r = lr[0];
+			let epoc = epoch[0];
+			const min = Math.min(...data_y);
+			const max = Math.max(...data_y);
+			let new_data = data_y.map(x => (x - min)/(max - min));
+
+			weights = log_regress(data_x,new_data,l_r,epoc);
+			result.innerHTML = `
+					<div style = "height: 4em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
+					 font-size: 2em; font-family: monospace;">
+						<span>a</span><span>:</span><span>${weights[0].toFixed(5)}</span>
+						<span>b</span><span>:</span><span>${weights[1].toFixed(5)}</span>
+						
+														
+					</div>
+				`;
+
+			result1.innerHTML = `\\[P = \\frac{1}{1 + e^{-(${weights[0].toFixed(3)}x + ${weights[1].toFixed(3)})}} \\]`
+
+			MathJax.typesetPromise();
+
+			let data_xy = data_x.map((x,i)=>({x: x,y: new_data[i]}));
+			let dataset = [];
+			a = weights[0];
+			b = weights[1];
+
+			for(let i = 0;i < data_x.length;i++){
+				let ans = 1 / (1 + Math.exp(-(a * data_x[i] + b)));
+				dataset[i] = ans;
+			}
+
+			steps.style.display = 'block';
+
+			steps_html = `
+<div class="steps-container">
+
+	<h2>Logistic Regression using Gradient Descent</h2>
+
+	<p>
+		The model predicts probabilities using the sigmoid function:
+	</p>
+
+	<p>
+		\\[
+		P(x)=
+		\\frac{1}
+		{1+e^{-(ax+b)}}
+		\\]
+	</p>
+
+	<h3>Step 1: Initialize Parameters</h3>
+
+	<p>
+		The algorithm starts with:
+	</p>
+
+	<p>
+		\\[
+		a=0,
+		\\qquad
+		b=0
+		\\]
+	</p>
+
+	<p>
+		Learning Rate:
+	</p>
+
+	<p>
+		\\[
+		\\alpha=${l_r}
+		\\]
+	</p>
+
+	<p>
+		Number of Epochs:
+	</p>
+
+	<p>
+		\\[
+		${epoc}
+		\\]
+	</p>
+
+	<h3>Step 2: First Training Sample</h3>
+
+	<p>
+		For the first data point:
+	</p>
+
+	<p>
+		\\[
+		x=${data_x[0]},
+		\\qquad
+		y=${new_data[0].toFixed(5)}
+		\\]
+	</p>
+
+	<h3>Step 3: Compute the Linear Output</h3>
+
+	<p>
+		\\[
+		z=ax+b
+		\\]
+	</p>
+
+	<p>
+		\\[
+		z=(0)(${data_x[0]})+0=0
+		\\]
+	</p>
+
+	<h3>Step 4: Apply the Sigmoid Function</h3>
+
+	<p>
+		\\[
+		\\hat y=
+		\\frac{1}
+		{1+e^{-z}}
+		\\]
+	</p>
+
+	<p>
+		\\[
+		\\hat y=
+		\\frac{1}{1+e^{0}}
+		=
+		0.5
+		\\]
+	</p>
+
+	<h3>Step 5: Compute the Error</h3>
+
+	<p>
+		\\[
+		error=
+		\\frac1n
+		(y-\\hat y)
+		\\]
+	</p>
+
+	<p>
+		\\[
+		error=
+		\\frac1{${data_x.length}}
+		(${new_data[0].toFixed(5)}-0.5)
+		=
+		${(((new_data[0]-0.5)/data_x.length)).toFixed(6)}
+		\\]
+	</p>
+
+	<h3>Step 6: Compute the Weight Gradient</h3>
+
+	<p>
+		\\[
+		gradient=x\\times error
+		\\]
+	</p>
+
+	<p>
+		\\[
+		gradient=
+		${data_x[0]}
+		\\times
+		${(((new_data[0]-0.5)/data_x.length)).toFixed(6)}
+		=
+		${(data_x[0]*((new_data[0]-0.5)/data_x.length)).toFixed(6)}
+		\\]
+	</p>
+
+	<h3>Step 7: Update the Parameters</h3>
+
+	<p>
+		Weight:
+	</p>
+
+	<p>
+		\\[
+		a
+		=
+		0
+		+
+		${l_r}
+		\\times
+		${(data_x[0]*((new_data[0]-0.5)/data_x.length)).toFixed(6)}
+		=
+		${(l_r*data_x[0]*((new_data[0]-0.5)/data_x.length)).toFixed(6)}
+		\\]
+	</p>
+
+	<p>
+		Bias:
+	</p>
+
+	<p>
+		\\[
+		b
+		=
+		0
+		+
+		${l_r}
+		\\times
+		${(((new_data[0]-0.5)/data_x.length)).toFixed(6)}
+		=
+		${(l_r*((new_data[0]-0.5)/data_x.length)).toFixed(6)}
+		\\]
+	</p>
+
+	<h3>Step 8: Continue Training</h3>
+
+	<p>
+		The same process is repeated for every remaining training sample. After one complete pass through the dataset, one epoch is finished.
+	</p>
+
+	<p>
+		This procedure is repeated for a total of:
+	</p>
+
+	<p>
+		\\[
+		${epoc}
+		\\text{ epochs}
+		\\]
+	</p>
+
+	<h3>Final Learned Model</h3>
+
+	<p style="font-size:1.5em;font-weight:bold;">
+		\\[
+		P=
+		\\frac1
+		{1+e^{-(${weights[0].toFixed(5)}x+${weights[1].toFixed(5)})}}
+		\\]
+	</p>
+
+</div>
+`;
+
+			my_chart = new Chart("myChart",{
+				type: "scatter",
+				data: {
+					labels: data_x,
+					datasets: [{
+						type: "line",
+						label: "Regression Line",
+						data: dataset,
+						backgroundColor: "blue",
+						borderColor: "blue",
+						pointRadius: 0.5,
+						lineTension: 0.4
+
+					},
+					{
+						type: "scatter",
+						label: "Raw Data",
+						data: data_xy,
+						backgroundColor: "green",
+						borderColor: "green",
+					}]
+				},
+				options: {
+					devicePixelRatio: 4,
+					responsize: true
+				}
+			});
+
+
+		        } catch(error) {
+		            alert(error);
+		        }
+		    });
+		});
+
+		steps.addEventListener("click",()=>{
+
+			if(steps.textContent == "Show Steps"){
+
+				ansSteps.innerHTML = steps_html;
+				MathJax.typesetPromise();
+				steps.textContent = "Hide Steps";
+			}else if(steps.textContent == "Hide Steps"){
+
+				ansSteps.innerHTML = ' ';
+				steps.textContent = "Show Steps";
+			}
+		});
+
+		document.getElementById("export").addEventListener("click", async () => {
+		    if (!weights) {
+		        alert("Please run the calculation first!");
+		        return;
+		    }
+
+		    const exportBtn = document.getElementById("export");
+		    const originalText = exportBtn.innerText;
+		    exportBtn.innerText = "Saving PDF...";
+		    exportBtn.style.pointerEvents = "none";
+
+		    const formattedX = formatDataForReport(x.value.trim());
+		    const formattedY = formatDataForReport(y.value.trim());
+
+		    await generateModularPDF({
+		        title: "Logistic Regression Analysis",
+		        datasetHTML: `
+		            <p style="margin: 0 0 10px 0;"><strong>X Data:</strong> ${formattedX}</p>
+		            <p style="margin: 0;"><strong>Y Data:</strong> ${formattedY}</p>
+		        `,
+		        resultsHTML: `
+		            <p style="font-size: 18px; margin-bottom: 15px;">
+		                <strong>Slope (a):</strong> ${weights[0].toFixed(6)} &nbsp;|&nbsp; 
+		                <strong>Intercept (b):</strong> ${weights[1].toFixed(6)}
+		            </p>
+		            <div style="font-size: 20px; padding: 18px; background: #f0f7ff; text-align: center; border-radius: 8px; border: 1px solid #cce0ff;">
+		                \\[ P(x) = \\frac{1}{1 + e^{-(${weights[0].toFixed(4)}x + ${weights[1].toFixed(4)})}} \\]
+		            </div>
+		        `,
+		        chartCanvasId: "myChart",
+		        stepsHTML: steps_html
+		    });
+
+		    exportBtn.innerText = originalText;
+		    exportBtn.style.pointerEvents = "auto";
+		});
+
+	
+
+
+	</script>
+</body>
+</html>
+
