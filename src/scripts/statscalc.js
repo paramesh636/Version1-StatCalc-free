@@ -397,7 +397,7 @@ function generateDataset(no_of_data,no_of_single_values,type){
 				if(i == 0){
 					data.push(j + 1);
 				}else{
-					data.push(Math.round((Math.random() * 200) * 10000)/10000);
+					data.push(Math.round((Math.random() * 200) * 100)/100);
 				}
 			}
 			datas.push(data);
@@ -406,7 +406,7 @@ function generateDataset(no_of_data,no_of_single_values,type){
 		for(let i = 0;i < no_of_data;i++){
 			let data = [];
 			for(let j = 0;j < length;j++){
-				data.push(Math.round((Math.random() * 200) * 10000)/10000);
+				data.push(Math.round((Math.random() * 200) * 100)/100);
 			}
 			datas.push(data);
 		}
