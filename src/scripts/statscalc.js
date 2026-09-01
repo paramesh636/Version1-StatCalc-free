@@ -420,3 +420,39 @@ function generateDataset(no_of_data,no_of_single_values,type){
 
 	return [datas,values];
 }
+
+function multiple_linear_regression(X_matrix, Y_array) {
+   
+    const X = X_matrix.map(row => [1, ...row]);
+    const Y = Y_array;
+
+    const X_mat = math.matrix(X);
+    const Y_mat = math.matrix(Y);
+    const X_T = math.transpose(X_mat);
+    const X_T_X = math.multiply(X_T, X_mat);
+    
+    let X_T_X_inv;
+    try {
+        X_T_X_inv = math.inv(X_T_X);
+    } catch (error) {
+        throw "Matrix is singular or ill-conditioned. Ensure features are independent and not perfectly correlated.";
+    }
+    
+    const X_T_Y = math.multiply(X_T, Y_mat);
+    const beta = math.multiply(X_T_X_inv, X_T_Y);
+
+    const coefficients = beta.toArray().map(v => Array.isArray(v) ? v[0] : v); // Flattens if it's a 2D array
+    const predictions = math.multiply(X_mat, beta).toArray().map(v => Array.isArray(v) ? v[0] : v);
+
+    // Calculate R-squared for model evaluation
+    const y_mean = math.mean(Y);
+    const ss_tot = Y.reduce((acc, y) => acc + Math.pow(y - y_mean, 2), 0);
+    const ss_res = Y.reduce((acc, y, i) => acc + Math.pow(y - predictions[i], 2), 0);
+    const r_squared = ss_tot === 0 ? 0 : 1 - (ss_res / ss_tot);
+
+    return {
+        coefficients: coefficients, // [intercept, b1, b2, ... bn]
+        predictions: predictions,
+        r_squared: r_squared
+    };
+}

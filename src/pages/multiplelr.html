@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Statistics Calculator</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script src="../scripts/statscalc.js"></script>
+    <script src="../scripts/pdfGenerator.js"></script>
+    <script src="../scripts/ui-components.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="styles.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        #ansSteps {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .steps-container {
+            width: 100%;
+            max-width: 950px;
+            margin: 0 auto;
+            padding: clamp(15px, 4vw, 60px);
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        mjx-container[display="true"] {
+            width: max-content !important;
+            max-width: 100% !important;
+            margin: 0.4em auto !important;
+            overflow-x: auto !important;
+            display: block !important;
+            text-align: center !important;
+            font-size: clamp(0.85em, 1.5vw + 0.4em, 2em) !important;
+        }
+
+        .steps-container p {
+            max-width: 100%;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .slider-container {
+            width: 75%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-left: 10px;
+            margin-bottom: 30px;
+        }
+
+        input[type="range"] {
+            width: 80%;
+            cursor: pointer;
+            margin: 0;
+            padding: 0;
+        }
+
+        #featureDisplay {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: rgb(10,100,255);
+            font-family: monospace;
+            width: 15%;
+            text-align: right;
+        }
+
+        .large-equation {
+            font-size: 1.2em;
+            font-family: monospace;
+            text-align: center;
+            padding: 20px;
+            background: #f0f7ff;
+            border-radius: 8px;
+            border: 1px solid #cce0ff;
+            margin: 20px auto;
+            max-width: 90%;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+
+    </style>
+</head>
+
+<body>
+
+    <div class="container" style="height: 500px;">
+
+        <div class="head">
+            <h1>Multiple Linear Regression</h1>
+            <i class="fa-regular fa-circle-question" id="info"></i>
+            <div id="infoBox"></div>
+        </div>
+
+        <h2>
+            \[
+                y = b_0 + b_1x_1 + b_2x_2 + \dots + b_nx_n
+            \]
+        </h2>
+
+        <div class="row">
+            <label style="margin-right: 20px;">Features:</label>
+                <input type="range"
+                       id="featureCount"
+                       min="2"
+                       max="10"
+                       value="2" style="box-shadow: 0 0 0; width: 64%;">
+
+                <span id="featureDisplay"
+                      style="color:black; margin-right: 20px;">2</span>
+        </div>
+
+        <div class="row">
+            <label>Dataset:</label>
+
+
+                <div class="button-wrapper" style=" margin-left: 10px;">
+                    <button id="importCsv">
+                        <i class="fa-solid fa-file-arrow-up"></i>
+                    </button>
+
+                    <div class="dropdown"
+                         style="bottom:100%;"
+                         id="dropdown-import">
+                        <a id="import">Import CSV</a>
+                    </div>
+                </div>
+
+                <input type="file"
+                       id="csvInput"
+                       accept=".csv,text/csv"
+                       style="display:none;">
+
+            <div class="button-wrapper" style="margin-left: auto">
+                <button id="exportPDF">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                </button>
+
+                <div class="dropdown"
+                     style="bottom:100%;"
+                     id="dropdown-export">
+                    <a id="export">Export PDF</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="height:0em;"></div>
+
+        <button id="calculate">Calculate</button>
+    </div>
+
+    <p id="answer"></p>
+
+    <div class="graph">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <button id="steps">Show Steps</button>
+    <p id="ansSteps"></p>
+
+    <script>
+        let featureSlider = document.getElementById("featureCount");
+        let featureDisplay = document.getElementById("featureDisplay");
+
+        let importCsvBtn = document.getElementById("importCsv");
+        let csvInput = document.getElementById("csvInput");
+
+        let submit = document.getElementById("calculate");
+        let result = document.getElementById("answer");
+        let steps = document.getElementById("steps");
+        let ansSteps = document.getElementById("ansSteps");
+
+        let my_chart = null;
+        let steps_html = "";
+
+        const info = document.getElementById("info");
+        const infoBox = document.getElementById("infoBox");
+        let hoverTimer;
+
+        const exportPdfBtn = document.getElementById("exportPDF");
+        const dropdownExport = document.getElementById("dropdown-export");
+        const dropdownImport = document.getElementById("dropdown-import");
+
+        let calc_values = null;
+
+        let global_X = [];
+        let global_Y = [];
+        let data_loaded = false;
+
+        const desc = `
+            <h3>Multiple Linear Regression</h3>
+
+            <h4>
+                Models the relationship between one dependent variable (Y)
+                and multiple independent variables (X₁, X₂...).
+            </h4>
+
+            <ul>
+                <li>
+                    <b>Regression Equation</b> →
+                    <b>y = b₀ + b₁x₁ + b₂x₂ + ...</b>
+                </li>
+
+                <li>
+                    <b>Intercept (b₀)</b> →
+                    Expected value of Y when all X features are zero.
+                </li>
+
+                <li>
+                    <b>Coefficients (bₙ)</b> →
+                    Indicates how much Y changes with a one-unit increase
+                    in Xₙ, holding all other features constant.
+                </li>
+
+                <li>
+                    <b>R-Squared (R²)</b> →
+                    Represents the proportion of variance for the dependent
+                    variable that's explained by the independent variables.
+                </li>
+
+                <li>
+                    <b>Data Formatting</b> →
+                    Import a CSV, then select the Y column and the X₁…Xₙ
+                    columns in the dialog. The number of X columns must
+                    match the Features slider.
+                </li>
+            </ul>
+        `;
+
+        function showInfo() {
+            infoBox.innerHTML = desc;
+            infoBox.classList.add("show");
+        }
+
+        function hideInfo() {
+            infoBox.innerHTML = "";
+            infoBox.classList.remove("show");
+        }
+
+        info.addEventListener("mouseenter", () => {
+            hoverTimer = setTimeout(() => {
+                showInfo();
+            }, 1000);
+        });
+
+        info.addEventListener("mouseleave", () => {
+            clearTimeout(hoverTimer);
+        });
+
+        info.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            if (infoBox.classList.contains("show")) {
+                hideInfo();
+            } else {
+                showInfo();
+            }
+        });
+
+        infoBox.addEventListener("mouseenter", () => {
+            clearTimeout(hoverTimer);
+        });
+
+        infoBox.addEventListener("mouseleave", () => {
+            hideInfo();
+        });
+
+        document.addEventListener("click", () => {
+            hideInfo();
+        });
+
+        // ------------------------------------------------------------
+        // Dropdown handling
+        // ------------------------------------------------------------
+
+        importCsvBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            dropdownImport.classList.toggle("show");
+            dropdownExport.classList.remove("show");
+        });
+
+        exportPdfBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            dropdownExport.classList.toggle("show");
+            dropdownImport.classList.remove("show");
+        });
+
+        document.addEventListener("click", () => {
+            dropdownImport.classList.remove("show");
+            dropdownExport.classList.remove("show");
+        });
+
+
+        featureSlider.addEventListener("input", function () {
+            featureDisplay.innerText = this.value;
+            data_loaded = false;
+            global_X = [];
+            global_Y = [];
+            calc_values = null;
+        });
+
+
+        document.getElementById("import").addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            dropdownImport.classList.remove("show");
+            csvInput.click();
+        });
+
+        csvInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = function (ev) {
+                try {
+                    const csvText = ev.target.result;
+                    const parsed = StatsCalc.parseCSV(csvText);
+
+                    if (parsed.rowCount === 0) {
+                        alert("No valid numeric data found in the CSV file.");
+                        csvInput.value = "";
+                        return;
+                    }
+
+                    const numFeatures = parseInt(featureSlider.value, 10);
+                    const requiredColumns = numFeatures + 1;
+
+                    if (parsed.columnCount < requiredColumns) {
+                        throw new Error(
+                            `CSV has only ${parsed.columnCount} column(s). ` +
+                            `Need at least ${requiredColumns} columns for ` +
+                            `${numFeatures} feature(s).`
+                        );
+                    }
+
+                    /*
+                     * Use the same shared selector used by UIC.
+                     * Target names are labels only here; we process the
+                     * selected columns ourselves because Multiple Regression
+                     * stores its data in global_X/global_Y.
+                     */
+                    UIC.showColumnSelector(
+                        parsed,
+                        ["Y", ...Array.from(
+                            { length: numFeatures },
+                            (_, i) => `X${i + 1}`
+                        )],
+                        (selectedCols) => {
+
+                            try {
+                                const yIdx = selectedCols[0];
+                                const xIndices = selectedCols.slice(1);
+
+                                // Y and every X must be different.
+                                const used = new Set(selectedCols);
+
+                                if (used.size !== requiredColumns) {
+                                    throw new Error(
+                                        "Y and all X columns must be distinct. " +
+                                        "Please choose different columns for each."
+                                    );
+                                }
+
+                                if (xIndices.length !== numFeatures) {
+                                    throw new Error(
+                                        `You must select exactly ${numFeatures} X columns.`
+                                    );
+                                }
+
+                                /*
+                                 * Re-parse the selected columns through the
+                                 * shared StatsCalc parser, exactly like UIC.
+                                 *
+                                 * Y is selected first, followed by X1...Xn.
+                                 */
+                                const finalResult = StatsCalc.parseCSV(
+                                    csvText,
+                                    { cols: selectedCols }
+                                );
+
+                                if (
+                                    !finalResult.columns ||
+                                    finalResult.columns.length !== requiredColumns
+                                ) {
+                                    throw new Error(
+                                        "Unable to import the selected columns."
+                                    );
+                                }
+
+                                const importedY = finalResult.columns[0] || [];
+
+                                const importedX = Array.from(
+                                    { length: numFeatures },
+                                    (_, i) => finalResult.columns[i + 1] || []
+                                );
+
+                                const rowCount = importedY.length;
+
+                                if (rowCount < numFeatures + 2) {
+                                    throw new Error(
+                                        `Not enough valid numeric rows after importing. ` +
+                                        `Need at least ${numFeatures + 2} rows to fit ` +
+                                        `a model with ${numFeatures} features ` +
+                                        `(found ${rowCount}).`
+                                    );
+                                }
+
+                                /*
+                                 * StatsCalc.parseCSV() extracts numeric values
+                                 * from each selected column. Make sure all
+                                 * imported columns have matching lengths before
+                                 * building the X matrix.
+                                 */
+                                const validRows = [];
+                                const minLength = Math.min(
+                                    importedY.length,
+                                    ...importedX.map(col => col.length)
+                                );
+
+                                for (let r = 0; r < minLength; r++) {
+                                    const yValue = importedY[r];
+
+                                    if (!Number.isFinite(yValue)) continue;
+
+                                    const xRow = [];
+                                    let valid = true;
+
+                                    for (let c = 0; c < numFeatures; c++) {
+                                        const value = importedX[c][r];
+
+                                        if (!Number.isFinite(value)) {
+                                            valid = false;
+                                            break;
+                                        }
+
+                                        xRow.push(value);
+                                    }
+
+                                    if (valid) {
+                                        validRows.push({
+                                            y: yValue,
+                                            x: xRow
+                                        });
+                                    }
+                                }
+
+                                if (validRows.length < numFeatures + 2) {
+                                    throw new Error(
+                                        `Not enough valid numeric rows after cleaning. ` +
+                                        `Need at least ${numFeatures + 2} rows ` +
+                                        `(found ${validRows.length}).`
+                                    );
+                                }
+
+                                global_Y = validRows.map(row => row.y);
+                                global_X = validRows.map(row => row.x);
+
+                                data_loaded = true;
+                                calc_values = null;
+
+                                /*
+                                 * This is the same feedback mechanism used
+                                 * throughout the main template:
+                                 *
+                                 * StatsCalc.showToast(...)
+                                 *
+                                 * No separate "Data Loaded Successfully"
+                                 * paragraph is needed.
+                                 */
+                                StatsCalc.showToast(
+                                    `Imported ${global_Y.length} rows across ` +
+                                    `${requiredColumns} column(s)`
+                                );
+
+                            } catch (error) {
+                                alert(error.message || error);
+                            }
+                        }
+                    );
+
+                } catch (error) {
+                    alert("Error parsing CSV: " + (error.message || error));
+                    data_loaded = false;
+                    global_X = [];
+                    global_Y = [];
+                }
+
+                // Allow the same CSV to be selected again.
+                csvInput.value = "";
+            };
+
+            reader.readAsText(file);
+        });
+
+        // ------------------------------------------------------------
+        // Enter key -> Calculate
+        // ------------------------------------------------------------
+
+        document.addEventListener("keydown", (e) => {
+            if (
+                e.key === "Enter" &&
+                e.target.tagName !== "TEXTAREA" &&
+                e.target.tagName !== "SELECT"
+            ) {
+                e.preventDefault();
+
+                submit.classList.add("active-pressed");
+
+                setTimeout(() => {
+                    submit.classList.remove("active-pressed");
+                }, 150);
+
+                setTimeout(() => {
+                    submit.click();
+                }, 20);
+            }
+        });
+
+        // ------------------------------------------------------------
+        // Calculation
+        // ------------------------------------------------------------
+
+        submit.addEventListener("click", () => {
+
+            ansSteps.innerHTML = " ";
+            steps.textContent = "Show Steps";
+
+            if (my_chart) {
+                my_chart.destroy();
+                my_chart = null;
+            }
+
+            try {
+                if (
+                    !data_loaded ||
+                    global_X.length === 0 ||
+                    global_Y.length === 0
+                ) {
+                    throw new Error("Please import a CSV dataset first.");
+                }
+
+                const numFeatures = parseInt(featureSlider.value, 10);
+
+                if (global_X[0].length !== numFeatures) {
+                    throw new Error(
+                        `Loaded data has ${global_X[0].length} feature(s) ` +
+                        `but the Features slider is set to ${numFeatures}. ` +
+                        `Re-import the CSV after adjusting the slider.`
+                    );
+                }
+
+                const res = multiple_linear_regression(
+                    global_X,
+                    global_Y
+                );
+
+                const b = res.coefficients.map(v =>
+                    parseFloat(v.toFixed(5))
+                );
+
+                const r2 = parseFloat(
+                    res.r_squared.toFixed(4)
+                );
+
+                calc_values = {
+                    features: numFeatures,
+                    b: b,
+                    r2: r2,
+                    n: global_Y.length
+                };
+
+                let eqString = `y = ${b[0]}`;
+
+                for (let i = 1; i <= numFeatures; i++) {
+                    const sign = b[i] >= 0 ? "+" : "-";
+
+                    eqString +=
+                        ` ${sign} ${Math.abs(b[i])}x_{${i}}`;
+                }
+
+                result.style.display = "block";
+
+                result.innerHTML = `
+                    <div style="font-size:2em; font-family: monospace;text-align:center;">
+
+                        <div>
+                            \\[
+                                ${eqString}
+                            \\]
+                        </div>
+
+                        <div>
+                            \\[
+                                R^2 = ${r2}
+                            \\]
+                        </div>
+
+                    </div>
+                `;
+
+                MathJax.typesetPromise();
+
+                const scatterData = global_Y.map((actual, i) => ({
+                    x: res.predictions[i],
+                    y: actual
+                }));
+
+                const minVal = Math.min(
+                    ...global_Y,
+                    ...res.predictions
+                );
+
+                const maxVal = Math.max(
+                    ...global_Y,
+                    ...res.predictions
+                );
+
+                my_chart = new Chart("myChart", {
+                    type: "scatter",
+
+                    data: {
+                        datasets: [
+                            {
+                                type: "line",
+                                label: "Perfect Fit Reference",
+
+                                data: [
+                                    { x: minVal, y: minVal },
+                                    { x: maxVal, y: maxVal }
+                                ],
+
+                                borderColor:
+                                    "rgba(255, 99, 132, 0.7)",
+
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                borderDash: [5, 5],
+                                lineTension: 0
+                            },
+
+                            {
+                                type: "scatter",
+                                label: "Actual vs Predicted",
+                                data: scatterData,
+                                backgroundColor:
+                                    "rgb(10,100,255)",
+                                borderColor:
+                                    "rgb(10,100,255)",
+                                pointRadius: 3
+                            }
+                        ]
+                    },
+
+                    options: {
+                        responsive: true,
+                        devicePixelRatio: 4,
+
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "Predicted Y"
+                                }
+                            },
+
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: "Actual Y"
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // ----------------------------------------------------
+                // Steps
+                // ----------------------------------------------------
+
+                const b_html = b
+                    .map((val, i) => `\\(b_${i} = ${val}\\)`)
+                    .join("<br>");
+
+                steps_html = `
+                    <div class="steps-container">
+
+                        <h2>
+                            Multiple Linear Regression using Normal Equation
+                        </h2>
+
+                        <p>
+                            Multiple Linear Regression fits an n-dimensional hyperplane
+                            to the data using the Normal Equation:
+                        </p>
+
+                        <p>
+                            \\[
+                                \\boldsymbol{\\beta}
+                                =
+                                (X^T X)^{-1} X^T Y
+                            \\]
+                        </p>
+
+                        <h3>Step 1: The Model Structure</h3>
+
+                        <p>
+                            With ${numFeatures} independent variables, the regression
+                            model is:
+                        </p>
+
+                        <p>
+                            \\[
+                                y =
+                                b_0 +
+                                b_1x_1 +
+                                b_2x_2 +
+                                \\dots +
+                                b_${numFeatures}x_${numFeatures}
+                            \\]
+                        </p>
+
+                        <h3>Step 2: Construct the Matrices</h3>
+
+                        <p>
+                            The input matrix \(X\) and target vector \(Y\) are represented as:
+                        </p>
+
+                        <p>
+                            \\[
+                            X =
+                            \\begin{bmatrix}
+                                1 & x_{11} & x_{12} & \\dots & x_{1${numFeatures}} \\\\
+                                1 & x_{21} & x_{22} & \\dots & x_{2${numFeatures}} \\\\
+                                1 & x_{31} & x_{32} & \\dots & x_{3${numFeatures}} \\\\
+                                1 & x_{41} & x_{42} & \\dots & x_{4${numFeatures}} \\\\
+                                \\vdots & \\vdots & \\vdots & \\ddots & \\vdots \\\\
+                                1 & x_{n1} & x_{n2} & \\dots & x_{n${numFeatures}}
+                            \\end{bmatrix}
+                            \\qquad
+                            Y =
+                            \\begin{bmatrix}
+                                y_1 \\\\
+                                y_2 \\\\
+                                y_3 \\\\
+                                y_4 \\\\
+                                \\vdots \\\\
+                                y_n
+                            \\end{bmatrix}
+                            \\]
+                        </p>
+
+                        <p>
+                            Applying the Normal Equation gives:
+                        </p>
+
+                        <p>
+                            \\[
+                                \\boldsymbol{\\beta}
+                                =
+                                (X^T X)^{-1} X^T Y
+                            \\]
+                        </p>
+
+                        <p style="font-size:0.7em">
+                            ${b_html}
+                        </p>
+
+                        <h3>Step 3: Model Evaluation</h3>
+
+                        <p>
+                            R-Squared (\\(R^2\\)) measures how well the regression model
+                            explains the variance in the target variable:
+                        </p>
+
+                        <p>
+                            \\[
+                                R^2 = ${r2}
+                            \\]
+                        </p>
+
+                        <h3>Final Regression Equation</h3>
+
+                        <p style="
+                            font-size:1.5em;
+                            font-weight:bold;
+                        ">
+                            \\[
+                                ${eqString}
+                            \\]
+                        </p>
+
+                    </div>
+                `;
+
+                steps.style.display = "block";
+
+            } catch (error) {
+                alert(error.message || error);
+            }
+        });
+
+        // ------------------------------------------------------------
+        // Show / Hide Steps
+        // ------------------------------------------------------------
+
+        steps.addEventListener("click", () => {
+
+            if (steps.textContent === "Show Steps") {
+
+                ansSteps.innerHTML = steps_html;
+                MathJax.typesetPromise();
+
+                steps.textContent = "Hide Steps";
+
+            } else if (steps.textContent === "Hide Steps") {
+
+                ansSteps.innerHTML = "";
+                steps.textContent = "Show Steps";
+            }
+        });
+
+        // ------------------------------------------------------------
+        // Export PDF
+        // ------------------------------------------------------------
+
+        document.getElementById("export").addEventListener(
+            "click",
+            async () => {
+
+                if (!calc_values) {
+                    alert("Please run the calculation first!");
+                    return;
+                }
+
+                const exportBtn =
+                    document.getElementById("export");
+
+                const originalText =
+                    exportBtn.innerText;
+
+                exportBtn.innerText = "Saving PDF...";
+                exportBtn.style.pointerEvents = "none";
+
+                try {
+
+                    let dataPreviewStr =
+                        `<strong>Rows Processed:</strong> ` +
+                        `${calc_values.n}<br>`;
+
+                    dataPreviewStr +=
+                        `<strong>Sample Data ` +
+                        `(First 3 rows):</strong><br>`;
+
+                    for (
+                        let i = 0;
+                        i < Math.min(3, global_Y.length);
+                        i++
+                    ) {
+                        dataPreviewStr +=
+                            `Y: ${global_Y[i]} | ` +
+                            `X: [${global_X[i].join(", ")}]<br>`;
+                    }
+
+                    if (global_Y.length > 3) {
+                        dataPreviewStr += "...";
+                    }
+
+                    let eqString =
+                        `y = ${calc_values.b[0]}`;
+
+                    for (
+                        let i = 1;
+                        i <= calc_values.features;
+                        i++
+                    ) {
+                        const sign =
+                            calc_values.b[i] >= 0
+                                ? "+"
+                                : "-";
+
+                        eqString +=
+                            ` ${sign} ` +
+                            `${Math.abs(calc_values.b[i])}` +
+                            `x_{${i}}`;
+                    }
+
+                    await generateModularPDF({
+                        title:
+                            "Multiple Linear Regression Analysis",
+
+                        datasetHTML: `
+                            <p style="margin:0 0 10px 0;">
+                                <strong>Features (k):</strong>
+                                ${calc_values.features}
+                            </p>
+
+                            <div style="
+                                font-family:monospace;
+                                font-size:14px;
+                                background:#f5f5f5;
+                                padding:10px;
+                                border-radius:5px;
+                            ">
+                                ${dataPreviewStr}
+                            </div>
+                        `,
+
+                        resultsHTML: `
+                            <div style="
+                                font-size:18px;
+                                padding:18px;
+                                background:#f0f7ff;
+                                text-align:center;
+                                border-radius:8px;
+                                border:1px solid #cce0ff;
+                                line-height:2;
+                            ">
+                                \\[
+                                    ${eqString}
+                                \\]
+
+                                <p style="
+                                    margin:15px 0 0 0;
+                                    color:#0066cc;
+                                ">
+                                    <strong>
+                                        R-Squared (R²):
+                                    </strong>
+                                    ${calc_values.r2}
+                                </p>
+                            </div>
+                        `,
+
+                        chartCanvasId: "myChart",
+                        stepsHTML: steps_html
+                    });
+
+                } finally {
+
+                    exportBtn.innerText = originalText;
+                    exportBtn.style.pointerEvents = "auto";
+                }
+            }
+        );
+    </script>
+
+</body>
+</html>
