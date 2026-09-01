@@ -12,6 +12,9 @@ const keywords = [{topic:'correlation(pearson)',keywords:['correlation','relatio
 				  {topic:'logistic map',keywords:['fun']},
 				  {topic:'collatz conj.',keywords:['collatz','3x+1','miscellaneous']},
 				  {topic:'t-test(one-sample)',keywords:['t','ttest','one', 'sample']},
-				  {topic:'t-test(two-sample)',keywords:['two','sample','ttest']}
+				  {topic:'t-test(two-sample)',keywords:['two','sample','ttest']},
+				  {topic:'chi-square test',keywords:['chi','square','compare']},
+				  {topic:'mann-whitney u-test',keywords:['mann','whitney','u']},
+				  {topic:'multiple linear',keywords:['multiple','linear','regression']}
 
 				   ];

@@ -5,9 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Statistics Calculator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="src/keywords.js"></script>
+    <script src="src/scripts/keywords.js"></script>
 </head>
 <style>
+
+    :root {
+        --background: white;
+        --text: black;
+        --shadow: 0 0 10px grey;
+        --grey: grey;
+        --focus: rgb(230,230,230);
+    }
 body{
 padding: 0;
 margin: 0;
@@ -15,6 +23,9 @@ display: flex;
 justify-content: center;
 align-items: center;
 height: 96.8vh;
+background-color: var(--background);
+color: var(--text);
+transition: background-color 0.5s ease, color 0.5s ease;
 }
 .sidebar{
 height: 100%;
@@ -23,7 +34,7 @@ padding: 20px;
 display: flex;
 flex-direction: column;
 align-items: center;
-box-shadow: 0 0 10px grey;
+box-shadow: var(--shadow);
 overflow-y: auto;
 transition: all 0.3s ease;
 scroll-behavior: smooth;
@@ -61,12 +72,13 @@ height: 100%;
     justify-content: center;
     align-items: center;
     border: none;
-    background: transparent;
+    background: var(--background);
+    color: var(--text);
     cursor: pointer;
     transition: background 0.3s;
 }
 #menu-btn:hover, #minimize:hover {
-    background: rgb(230,230,230);
+    background: var(--focus);
 }
 
 
@@ -79,15 +91,17 @@ display: flex;
 justify-content: space-evenly;
 align-items: center;
 flex-shrink: 0;
-background: white;
-border: 1px solid grey;
+background: var(--background);
+color: var(--text);
+border: 1px solid var(--grey);
 }
 
 .search:focus-within{
-background: rgb(230,230,230);
+background: var(--focus);
 }
 .search input{
 background: transparent;
+color: var(--text);
 border: none;
 height: 100%;
 width: 70%;
@@ -96,7 +110,7 @@ font-size: 16px;
 outline: none;
 }
 input::placeholder{
-color: black;
+color: var(--text);
 text-align: left;
 }
 
@@ -107,7 +121,7 @@ margin-top: 30px;
 margin-bottom: 10px;
 font-size: 16px;
 font-family: monospace;
-color: grey;
+color: var(--grey);
 }
 
 .sidebar.active .search,
@@ -123,14 +137,15 @@ height: 50px;
 font-weight: bold;
 font-size: 16px;
 border: none;
-background: transparent;
+background: var(--background);
+color: var(--text);
 text-align: left;
 border-radius: 10px;
 padding: 15px;
 }
 .sidebar button:hover{
 cursor: pointer;
-background: rgb(230,230,230);
+background: var(--focus);
 }
 .line{
 width: 90%;
@@ -164,10 +179,10 @@ button.highlight:hover {
     position: absolute;
     top: 70px;
     left: 20px;
-    background: white;
-    border: 1px solid #ddd;
+    background: var(--background);
+    border: 1px solid var(--grey);
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
     width: 180px;
     opacity: 0;
     visibility: hidden;
@@ -184,11 +199,19 @@ button.highlight:hover {
     display: block;
     padding: 12px 16px;
     text-decoration: none;
-    color: #333;
+    color: var(--text);
     font-family: monospace;
 }
 .dropdown a:hover {
-    background: rgb(230,230,230);
+    background: var(--focus);
+}
+
+body.dark {
+    --background: #121212;
+        --text: #f0f0f0;
+        --shadow: 0 0 10px rgb(50,50,50);
+        --grey: grey;
+        --focus: #2a2a2a;
 }
 </style>
 <body>
@@ -200,6 +223,7 @@ button.highlight:hover {
     </div>
 
     <div class="dropdown" id="dropdown">
+        <a style="cursor:pointer;" id="theme">Dark Theme</a>
         <a href="https://your-purchase-link.com" target="_blank">Purchase</a>
     </div>
 
@@ -224,6 +248,8 @@ button.highlight:hover {
     <button onclick="loadPage('src/pages/quadratic_curve_fit.html')">Quadratic Regression</button>
     <div class="line"></div>
     <button onclick="loadPage('src/pages/logregress.html')">Logistic Regression</button>
+    <div class="line"></div>
+    <button onclick="loadPage('src/pages/multiplelr.html')">Multiple Linear</button>
     <div class="line"></div>
     <div class="heading">Probability</div>
     <button onclick="loadPage('src/pages/normaldist.html')">Normal Dist.</button>
@@ -250,10 +276,11 @@ button.highlight:hover {
 
 <script>
 let page = document.getElementById('page');
+let theme = document.getElementById('theme');
 
-function loadPage(filename){
-    page.data = filename;
-}
+
+
+
 
 let minimize = document.getElementById('minimize');
 let sidebar = document.querySelector('.sidebar');
@@ -275,7 +302,6 @@ minimize.addEventListener('click',()=>{
     }
 });
 
-// New Menu Button + Dropdown
 const menuBtn = document.getElementById('menu-btn');
 const dropdown = document.getElementById('dropdown');
 
@@ -288,6 +314,41 @@ menuBtn.addEventListener('click', (e) => {
 document.addEventListener('click', () => {
     dropdown.classList.remove('show');
 });
+
+let darkMode = false;
+
+
+function applyTheme() {
+
+    const pageDocument = page.contentDocument;
+
+    if (!pageDocument) return;
+
+    document.body.classList.toggle('dark', darkMode);
+
+    pageDocument.body.classList.toggle('dark', darkMode);
+}
+
+
+page.addEventListener('load', () => {
+    applyTheme();
+});
+
+theme.addEventListener('click', () => {
+
+    darkMode = !darkMode;
+
+    applyTheme();
+
+    theme.textContent = darkMode
+        ? 'Light Theme'
+        : 'Dark Theme';
+});
+
+
+function loadPage(filename){
+    page.data = filename;
+}
 
 const searchInput = document.getElementById('search');
 const menuButtons = Array.from(document.querySelectorAll('.sidebar button')).filter(btn => !btn.id);

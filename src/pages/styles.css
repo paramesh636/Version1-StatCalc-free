@@ -1,8 +1,23 @@
+:root {
+	--background: white;
+	--text: black;
+	--shadow: 0 2px 5px grey;
+	--darkgrey: rgb(180,180,180);
+	--focus: rgb(230,230,230);
+	--hover: rgb(240,240,240);
+	--themecolor: rgb(10,100,255);
+}
+
+
+
 body{
 		display: flex;
 		flex-direction: column;
 		justify-content: space-evenly;
 		align-items: center;
+		background-color: var(--background);
+		color: var(--text);
+		transition: background-color 0.5s ease, color 0.5s ease;
 	}
 
 	.container{
@@ -38,7 +53,7 @@ body{
 		align-items: center;
 		font-weight: bold;
 		font-family: sans-serif;
-		background-color: rgb(10,100,255);
+		background-color: var(--themecolor);
 		color: white;
 	}
 
@@ -47,7 +62,7 @@ body{
 		width: 100%;
 		font-size: 2em;
 		text-align: center;
-		color: black;
+		color: var(--text);
 		margin-bottom: 20px;
 	}
 
@@ -61,18 +76,18 @@ body{
 		border: none;
 		outline: none;
 		border-radius: 14px;
-		box-shadow: 0 2px 5px grey;
+		box-shadow: var(--shadow);
 		font-size: 1em;
 		transition: all 0.2s ease;
 	}
 
 	.container input:focus{
-		background-color: rgb(230,230,230);
-		box-shadow: 0 5px 5px grey;
+		background-color: var(--focus);
+		box-shadow: var(--shadow);
 	}
 
 	.container input::placeholder{
-		color: black;
+		color: var(--text);
 	}
 
 	.container button{
@@ -81,7 +96,7 @@ body{
 		border: none;
 		padding: 0;
 		border-radius: 14px;
-		background-color: rgb(10,100,255);
+		background-color: var(--themecolor);
 		color: white;
 		font-weight: bold;
 		font-size: 20px;
@@ -114,7 +129,7 @@ body{
 	.row button{
 		width: 5%;
 		height: 50px;
-		color: black;
+		color: var(--text);
 		font-weight: bold;
 		font-size: 16px;
 		border: none;
@@ -152,7 +167,7 @@ body{
 		width: 100%;
 		font-size: 2em;
 		text-align: center;
-		color: black;
+		color: var(--text);
 		padding: 0 0 100px 0;
 	}
 
@@ -163,8 +178,8 @@ body{
 		font-size: 1em;
 		font-family: monospace;
 		text-align: center;
-		color: black;
-		background-color: transparent;
+		color: var(--text);
+		background-color: var(--background);
 		border: none;
 		border-color: transparent;
 	}
@@ -197,22 +212,25 @@ body{
 
 .deviation-table th,
 .deviation-table td{
-	border: 1px solid #ccc;
+	border: 1px solid var(--darkgrey);
 	padding: 12px;
 	text-align: center;
 }
 
 .deviation-table th{
-	background: #e8e8e8;
+	background: var(--focus);
+	color: var(--text);
 	font-weight: bold;
 }
 
 .deviation-table tr:nth-child(even){
-	background: #f9f9f9;
+	background: var(--hover);
+	color: var(--text);
 }
 
 .sum-row{
-	background: #eef5ff !important;
+	background: var(--background);
+	color: var(--text);
 	font-weight: bold;
 }
 
@@ -220,7 +238,7 @@ body{
 	position: relative;
 	width: 78.5%;
 	height: 3em;
-	background-color: transparent;
+	background-color: var(--background);
 	margin-bottom: 30px;
 	margin-left: 10px;
 	padding-left: 10px;
@@ -232,7 +250,7 @@ body{
 }
 
 .row select:hover{
-	background-color: rgb(240,240,240);
+	background-color: var(--hover);
 	cursor: pointer;
 }
 
@@ -276,10 +294,9 @@ body{
     right: 0;
     width: 280px;
     padding: 15px;
-    background: white;
-    border: 1px solid #ccc;
+    background: var(--background);
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow);
     z-index: 1000;
     opacity: 0;
     visibility: hidden;
@@ -317,11 +334,11 @@ body{
     bottom: 110%;
     left: 140%;
     transform: translateX(-50%);
-    background: white;
-    color: black;
+    background: var(--background);
+    color: var(--text);
     border: 1px solid #ddd;
     border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow);
     width: 120px;
     opacity: 0;
     visibility: hidden;
@@ -338,13 +355,13 @@ body{
     display: block;
     font-family: monospace;
     padding: 10px 10px;
-    color: black;
+    color: var(--text);
     text-decoration: none;
     white-space: nowrap;
 }
 
 .dropdown a:hover {
-    background: rgb(230,230,230);
+    background: var(--hover);
     cursor: pointer;
 }
 
@@ -399,3 +416,15 @@ body{
     }
 }
 
+
+body.dark {
+    --background: #121212;
+    --text: #f0f0f0;
+    --shadow: 0 2px 5px #000;
+    --darkgrey: #eeeeee;
+    --focus: #2a2a2a;
+    --hover: #333333;
+    --themecolor: rgb(10,100,255);
+
+    color-scheme: dark;
+}
