@@ -13,7 +13,8 @@
     <script src="../scripts/statscalc.js"></script>
     <script src="../scripts/pdfGenerator.js"></script>
     <script src="../scripts/ui-components.js"></script>
-
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -121,7 +122,7 @@
                        value="2" style="box-shadow: 0 0 0; width: 64%;">
 
                 <span id="featureDisplay"
-                      style="color:black; margin-right: 20px;">2</span>
+                      style="color:var(--text); margin-right: 20px;">2</span>
         </div>
 
         <div class="row">
@@ -589,6 +590,15 @@
                     n: global_Y.length
                 };
 
+                saveHistory(
+                    "Multiple Linear Regression",
+                    "src/pages/multiplelr.html",
+                    {
+                        featureCount : numFeatures
+                    },
+                    calc_values
+                    );
+
                 let eqString = `y = ${b[0]}`;
 
                 for (let i = 1; i <= numFeatures; i++) {
@@ -941,11 +951,8 @@
 
                                 <p style="
                                     margin:15px 0 0 0;
-                                    color:#0066cc;
-                                ">
-                                    <strong>
+                                 ">
                                         R-Squared (R²):
-                                    </strong>
                                     ${calc_values.r2}
                                 </p>
                             </div>

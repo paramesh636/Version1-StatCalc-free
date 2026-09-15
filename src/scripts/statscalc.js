@@ -46,6 +46,9 @@ function multiply(x,y){
 
 function factorial(x){
 
+	if(x == 0){
+		return 1;
+	}
 	let ans = 1;
 	while(x >= 1){
 
@@ -451,8 +454,165 @@ function multiple_linear_regression(X_matrix, Y_array) {
     const r_squared = ss_tot === 0 ? 0 : 1 - (ss_res / ss_tot);
 
     return {
-        coefficients: coefficients, // [intercept, b1, b2, ... bn]
+        coefficients: coefficients,
         predictions: predictions,
         r_squared: r_squared
     };
+}
+
+
+function confidence_interval(x_bar, n, sd, cl){
+
+	let targetProb = 1 - ((1 - cl)/2);
+	let std_error = sd/Math.sqrt(n);
+	if(n >= 30){
+
+		let critical = jStat.normal.inv(targetProb,0,1);
+		let alpha = critical * std_error;
+		return [x_bar - alpha, x_bar + alpha,std_error,alpha,critical];
+
+	}else{
+
+		let df = n - 1;
+		let critical = jStat.studentt.inv(targetProb,df);
+		let alpha = critical * std_error;
+		return [x_bar - alpha, x_bar + alpha,std_error,alpha,critical];
+	}
+}
+
+function poisson_dist(x,lambda){
+
+	let p = (Math.exp(-lambda) * (Math.pow(lambda,x)))/factorial(x);
+	let sd = Math.sqrt(lambda);
+
+	return [p,sd];
+}
+
+
+let minReal = -2.5;
+let maxReal = 2;
+let minImag = -1.5;
+let maxImag = 1.5;
+
+function mandlebrot_set(width,height,max_iterations){
+
+	
+	let maxIter = max_iterations;
+
+	let set = [];
+
+	for(let i = 0;i < width;i++){
+
+		for(let j = 0;j < height;j++){
+
+			let z_real = 0;
+			let z_imag = 0;
+			let iter = 0;
+
+			const c_real = minReal +
+                (i / (width - 1)) * (maxReal - minReal);
+
+            const c_imag = minImag +
+                (j / (height - 1)) * (maxImag - minImag);
+
+			while((z_real * z_real) + (z_imag * z_imag) < 4 && iter < maxIter){
+
+				let z1 = z_real;
+				z_real = z_real*z_real - z_imag*z_imag + c_real;
+				z_imag = 2 * z1 * z_imag + c_imag;
+				iter++;
+			}
+
+			let smoothIter = iter;
+
+			if (iter < maxIter) {
+
+			    const magnitude = Math.sqrt(
+			        z_real * z_real +
+			        z_imag * z_imag
+			    );
+
+			    smoothIter =
+			        iter + 1 -
+			        Math.log(Math.log(magnitude)) / Math.log(2);
+			}
+
+			set.push({
+			    x: i,
+			    y: j,
+			    iter: iter,
+			    smoothIter: smoothIter
+			});
+
+		}
+	}
+	
+
+	return set;
+}
+
+function renderMandelbrot(ctx, data, width, height, maxIter) {
+    const image = ctx.createImageData(width, height);
+
+    // Capture the theme background
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const rgb = bg.match(/\d+/g)?.map(Number) || [18, 18, 18]; // Fallback to dark gray
+    const bgR = rgb[0];
+    const bgG = rgb[1];
+    const bgB = rgb[2];
+
+    for (const point of data) {
+        const index = (point.y * width + point.x) * 4;
+
+        // Inside the set (Black)
+        if (point.iter === maxIter) {
+            image.data[index]     = 0;
+            image.data[index + 1] = 0;
+            image.data[index + 2] = 0;
+            image.data[index + 3] = 255;
+            continue;
+        }
+
+        const escape = Number.isFinite(point.smoothIter) 
+            ? point.smoothIter 
+            : point.iter;
+
+        // 1. Color Palette (Blue -> Purple -> Orange -> Yellow)
+        const hue = (240 - escape * 4 + 360) % 360;
+        const saturation = 95;
+        const lightness = Math.min(85, Math.log10(escape + 1) * 35);
+
+        // HSL → RGB Conversion
+        const c = (1 - Math.abs(2 * lightness / 100 - 1)) * saturation / 100;
+        const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+        const m = lightness / 100 - c / 2;
+
+        let r, g, b;
+        if      (hue < 60)  { r = c; g = x; b = 0; }
+        else if (hue < 120) { r = x; g = c; b = 0; }
+        else if (hue < 180) { r = 0; g = c; b = x; }
+        else if (hue < 240) { r = 0; g = x; b = c; }
+        else if (hue < 300) { r = x; g = 0; b = c; }
+        else                { r = c; g = 0; b = x; }
+
+        r = (r + m) * 255;
+        g = (g + m) * 255;
+        b = (b + m) * 255;
+
+        // 2. Aura Blending
+        // Calculates how far away from the set the point is. 
+        // Subtracting 1.5 accounts for the outermost edges of the viewport.
+        let blend = Math.max(0, Math.min(1, (escape - 1.5) / 25));
+        
+        // Apply an exponential curve for a softer, more natural fade
+        blend = Math.pow(blend, 1.5);
+
+        // Blend the calculated color with the DOM background color
+        image.data[index]     = Math.max(0, Math.min(255, Math.round(bgR + (r - bgR) * blend)));
+        image.data[index + 1] = Math.max(0, Math.min(255, Math.round(bgG + (g - bgG) * blend)));
+        image.data[index + 2] = Math.max(0, Math.min(255, Math.round(bgB + (b - bgB) * blend)));
+        image.data[index + 3] = 255;
+    }
+
+    ctx.putImageData(image, 0, 0);
 }

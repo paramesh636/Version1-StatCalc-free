@@ -11,12 +11,21 @@
   	</script>
 	<script src="../scripts/statscalc.js"></script>
 	<script src="../scripts/bifurdata.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
 	<link rel="stylesheet" type="text/css" href="styles.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 	
 
 </head>
 
+<style>
+	
+	input:hover{
+		cursor: pointer;
+	}
+
+</style>
 
 <body>
 
@@ -142,6 +151,19 @@
 		    hideInfo();
 		});
 
+		document.addEventListener("keydown",(e) => {
+            if (e.key === 'Enter' && e.target.tagName !== "TEXTAREA"){
+                e.preventDefault();
+                submit.classList.add('active-pressed');
+                setTimeout(()=> {
+                    submit.classList.remove('active-pressed');
+                }, 150);
+                setTimeout(()=>{
+                    submit.click();
+                }, 20);
+            }
+        });
+
 		iterations.addEventListener("input", () => {
 		    iterations_value.textContent = iterations.value;
 		});
@@ -152,6 +174,8 @@
 		    x_value.textContent = x.value;
 		});
 		let my_chart = null;
+
+		restoreHistoryInputs();
 
 		submit.addEventListener("click",()=>{
 
@@ -179,6 +203,17 @@
 
 			    x_value = r_value * x_value * (1 - x_value);
 			}
+
+			saveHistory(
+				"Logistic Map",
+				"src/pages/visualize.html",
+				{
+					r : r_value,
+					x : x_value,
+					iterations : iteration_count
+				},
+				data.slice(1,5)
+				);
 
 			my_chart = new Chart(document.getElementById("myChart"), {
 

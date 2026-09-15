@@ -13,6 +13,8 @@
     <script src="../scripts/statscalc.js"></script>
     <script src="../scripts/pdfGenerator.js"></script>
     <script src="../scripts/ui-components.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -194,6 +196,8 @@
                 }, 20);
             }
         });
+
+        restoreHistoryInputs();
 
         submit.addEventListener("click",()=>{
             ansSteps.innerHTML = ' ';
@@ -384,6 +388,19 @@
             let limit = Math.max(4, Math.ceil(Math.abs(t_stat) + 1));
             let labels = [];
             let curve = [];
+
+            saveHistory(
+                "One-Sample t-Test",
+                "src/pages/ttest.html",
+                {
+                    x : mu0,
+                    n : n,
+                    p : xbar,
+                    s : s,
+                    select : options.value
+                },
+                calc_values
+                );
 
             for (let x = -limit; x <= limit; x += 0.05) {
                 labels.push(x);

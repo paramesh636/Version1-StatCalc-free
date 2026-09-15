@@ -13,6 +13,8 @@
     <script src="../scripts/statscalc.js"></script>
     <script src="../scripts/pdfGenerator.js"></script>
     <script src="../scripts/ui-components.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -219,6 +221,8 @@
                 x.placeholder = "Enter X value";
             }
         });
+
+        restoreHistoryInputs();
 
 
         submit.addEventListener("click",()=>{
@@ -720,6 +724,18 @@
                 label.push(i);
                 dataset.push(parseFloat(binomial_dist(n,p,i)));
             }
+
+            saveHistory(
+                "Binomial Distribution",
+                "src/pages/binomial.html",
+                {
+                    p : prob.value.trim(),
+                    n : no.value.trim(),
+                    select : options.value,
+                    x : x.value.trim()
+                },
+                calc_values
+                );
         
             my_chart = new Chart("myChart",{
                 type: 'bar',

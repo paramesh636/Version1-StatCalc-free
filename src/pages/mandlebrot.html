@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Statistics Calculator</title>
+	<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  	<script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  	</script>
+	<script src="../scripts/statscalc.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+<style>
+	
+	.graph {
+	    width: 100%;
+	    height: 600px;
+	    margin-top: 20px;
+	    display: flex;
+	    justify-content: center;
+	    align-items: center;
+	}
+
+	.graph canvas {
+	    width: 100%;
+	    height: auto;
+	    max-width: 900px;
+	    max-height: 600px;
+	    aspect-ratio: 3 / 2;
+	    display: block;
+	}
+
+	body.dark {
+    --background: #121212;
+        --text: #f0f0f0;
+        --shadow: 0 0 10px rgb(50,50,50);
+        --grey: grey;
+        --focus: #2a2a2a;
+</style>
+
+
+<body>
+
+	<div class="container">
+		
+		<div class="head">
+			<h1>Mandelbrot Set</h1>
+			<i class="fa-regular fa-circle-question" id="info"></i>
+			<div id="infoBox"></div>
+		</div>
+		<h2>Math is Beautiful.</h2>
+		<div class="row">
+			<label>Iter</label>
+			<input type="text" name="x" id="x" placeholder="Enter max iterations" required>
+		</div>
+		<button id="calculate">Calculate</button>
+	</div>
+
+	<div class="graph">
+		<canvas id="myChart"></canvas>
+	</div>
+
+	<button id="steps">Show Steps</button>
+	<p id="ansSteps"></p>
+
+	<script>
+		let x = document.getElementById("x");
+		let submit = document.getElementById("calculate");
+		let steps = document.getElementById("steps");
+		let ansSteps = document.getElementById("ansSteps");
+		let myChart = document.getElementById("myChart");
+		let ctx = myChart.getContext("2d");
+		let steps_html;
+		const info = document.getElementById("info");
+		const infoBox = document.getElementById('infoBox');
+		let hoverTimer;
+		const desc =  `<h3>Mandelbrot Set</h3>
+                    <h4>A famous mathematical fractal where a simple equation creates infinitely complex, self-similar patterns.</h4>
+                    <ul>
+                        <li>Pick a point (represented by a complex number, <strong>c</strong>) on a 2D plane.</li>
+                        <li>Start with <strong>z = 0</strong> and repeatedly apply the formula <strong>z = z² + c</strong>.</li>
+                        <li>If the resulting value stays bounded and never escapes to infinity as the loop repeats, that point belongs to the set.</li>
+                    </ul>`;
+
+		function showInfo(){
+			infoBox.innerHTML = desc;
+			infoBox.classList.add("show");
+		}
+		function hideInfo(){
+			infoBox.innerHTML = "";
+			infoBox.classList.remove("show");
+
+		}
+
+		info.addEventListener("mouseenter",()=>{
+
+			hoverTimer = setTimeout(()=>{
+				showInfo();
+			},1000);
+		});
+
+		info.addEventListener("mouseleave",()=>{
+
+			clearTimeout(hoverTimer);
+		});
+
+		info.addEventListener("click",(e)=>{
+
+			e.stopPropagation();
+
+			if(infoBox.classList.contains("show")){
+				hideInfo();
+			}else{
+				showInfo();
+			}
+		});
+
+		infoBox.addEventListener("mouseenter", () => {
+		    clearTimeout(hoverTimer);
+		});
+
+		infoBox.addEventListener("mouseleave", () => {
+		    hideInfo();
+		});
+
+		document.addEventListener("click", () => {
+		    hideInfo();
+		});
+
+		document.addEventListener("keydown",(e) => {
+            if (e.key === 'Enter' && e.target.tagName !== "TEXTAREA"){
+                e.preventDefault();
+                submit.classList.add('active-pressed');
+                setTimeout(()=> {
+                    submit.classList.remove('active-pressed');
+                }, 150);
+                setTimeout(()=>{
+                    submit.click();
+                }, 20);
+            }
+        });
+
+        restoreHistoryInputs();
+
+        const rect = document.querySelector(".graph").getBoundingClientRect();
+
+		myChart.width = Math.floor(rect.width);
+		myChart.height = Math.floor(rect.width * 2 / 3);
+
+		myChart.addEventListener("wheel", (event) => {
+
+		    event.preventDefault();
+
+		    const rect = myChart.getBoundingClientRect();
+
+		    // Mouse position on the canvas
+		    const mouseX = event.clientX - rect.left;
+		    const mouseY = event.clientY - rect.top;
+
+		    // Convert mouse position to complex coordinates
+		    const mouseReal =
+		        minReal +
+		        (mouseX / rect.width) * (maxReal - minReal);
+
+		    const mouseImag =
+		        minImag +
+		        (mouseY / rect.height) * (maxImag - minImag);
+
+		    // Zoom amount
+		    const zoomFactor = event.deltaY < 0 ? 0.9 : 1.1;
+
+		    // Current viewport size
+		    const realRange = maxReal - minReal;
+		    const imagRange = maxImag - minImag;
+
+		    // New viewport size
+		    const newRealRange = realRange * zoomFactor;
+		    const newImagRange = imagRange * zoomFactor;
+
+		    // Keep mouse position fixed
+		    const mouseRatioX = mouseX / rect.width;
+		    const mouseRatioY = mouseY / rect.height;
+
+		    minReal = mouseReal - newRealRange * mouseRatioX;
+		    maxReal = minReal + newRealRange;
+
+		    minImag = mouseImag - newImagRange * mouseRatioY;
+		    maxImag = minImag + newImagRange;
+
+		    // Recalculate
+		    const width = myChart.width;
+		    const height = myChart.height;
+		    const maxIter = Number(x.value);
+
+		    const data = mandlebrot_set(width, height, maxIter);
+
+		    renderMandelbrot(ctx, data, width, height, maxIter);
+		});
+
+		submit.addEventListener("click",()=>{
+
+			ansSteps.innerHTML = ' ';
+
+			steps.textContent = "Show Steps";
+
+		
+		try{
+
+			if(x.value.trim() === ""){
+			    throw "Please enter some data.";
+			}
+
+		    x_value = x.value.trim().split(/[\s,]+/).map(Number);
+
+		    if(x_value.some(Number.isNaN)){
+		        throw "Only numerical values are allowed.";
+		    }
+
+		    if(x_value.length > 1){
+		        throw "Only one value allowed.";
+		    }
+
+		}catch(error){
+
+		    alert(error);
+		    return;
+
+		}
+
+		let maxIter = x_value[0];
+		let height = myChart.height;
+		let width = myChart.width;
+
+		let c_real = 0.25;
+		let c_imag = 0.5;
+		let data = mandlebrot_set(width,height,maxIter);
+
+		renderMandelbrot(ctx,data,width,height,maxIter);
+		
+		
+		saveHistory(
+			"Mandlebrot Set",
+			"src/pages/mandlebrot.html",
+			{
+				x : maxIter
+			},
+			data.slice(0,5)
+			);
+
+		
+
+		steps.style.display = 'block';
+		steps_html = `
+            <div class="steps-container">
+
+                <h2>Mandelbrot Set</h2>
+
+                <p>
+                    Test a point on the complex plane, represented by the complex number <strong>c</strong>, to see if it remains bounded when iteratively plugged into a specific mathematical formula.
+                </p>
+
+                <h3>Step 1: The Mandelbrot Equation</h3>
+
+                <p>
+                    \\[
+                    z_{n+1} = z_n^2 + c
+                    \\]
+                </p>
+
+                <h3>Step 2: Start the Sequence</h3>
+
+                <p>
+                    The initial value for <strong>z</strong> is always 0. The constant <strong>c</strong> is the coordinate of the pixel being tested:
+                </p>
+
+                <p>
+                    \\[
+                    z_0 = 0, \\quad c = ${c_real} + ${c_imag}i
+                    \\]
+                </p>
+
+                <h3>Step 3: Apply the Rule Repeatedly</h3>
+
+                <p>
+                    First iteration:
+                </p>
+
+                <p>
+                    \\[
+                    z_1 = (0)^2 + c = c
+                    \\]
+                </p>
+
+                <p>
+                    Second iteration:
+                </p>
+
+                <p>
+                    \\[
+                    z_2 = (z_1)^2 + c = c^2 + c
+                    \\]
+                </p>
+
+                <p>
+                    Continue calculating the next <strong>z</strong> value. If the magnitude (distance from the origin) of <strong>z</strong> ever exceeds 2, the sequence will ultimately escape to infinity:
+                </p>
+
+                <p>
+                    \\[
+                    |z_n| > 2 \\implies \\text{Escapes to infinity}
+                    \\]
+                </p>
+
+                <h3>Step 4: Visualize the Fractal</h3>
+
+                <p>
+                    If the sequence never exceeds a magnitude of 2 before reaching the maximum iteration limit, the point belongs to the Mandelbrot set and is drawn in black. Otherwise, it is colored based on how quickly it escaped.
+                </p>
+
+            </div>
+            `;
+
+	});
+
+		steps.addEventListener("click",()=>{
+
+			if(steps.textContent == "Show Steps"){ 
+
+				ansSteps.innerHTML = steps_html;
+				MathJax.typesetPromise();
+				steps.textContent = "Hide Steps";
+			}else if(steps.textContent == "Hide Steps"){
+				ansSteps.innerHTML = ' ';
+				steps.textContent = "Show Steps";
+			}
+		});
+	</script>
+</body>
+</html>

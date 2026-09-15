@@ -13,6 +13,8 @@
     <script src="../scripts/statscalc.js"></script>
     <script src="../scripts/pdfGenerator.js"></script>
     <script src="../scripts/ui-components.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   
@@ -226,6 +228,8 @@
             }
         });
 
+        restoreHistoryInputs();
+
         submit.addEventListener("click",()=>{
 
             ansSteps.innerHTML = ' ';
@@ -386,6 +390,18 @@
                 z2: z2, 
                 prob: prob 
             };
+
+            saveHistory(
+                "Normal Distribution",
+                "src/pages/normaldist.html",
+                {
+                    x : target,
+                    sd : sd,
+                    m : mean_x,
+                    select: options.value
+                },
+                calc_values
+                );
 
             steps.style.display = "block";
 

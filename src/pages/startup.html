@@ -3,10 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../scripts/theme.js"></script>
 <title>Startup</title>
 </head>
 <style>
+    :root {
+        --background: white;
+        --text: black;
+    }
 body{
+    background: var(--background);
+    color: var(--text);
     padding: 0;
     margin: 0;
     display: flex;
@@ -15,6 +22,7 @@ body{
     align-items: center;
     height: 100vh;
     font-family: monospace;
+    transition: 0.5s background ease, 0.5s color ease;
 }
 h1{
     font-size: min(5vw, 3rem);
@@ -27,7 +35,7 @@ h2{
 .ball1,
 .ball2 {
     width: min(3vw, 30px);
-    background: black;
+    background: var(--text);
 
     transform-origin: bottom;
     transform: scaleY(0);
@@ -45,6 +53,7 @@ h2{
     align-items:flex-end;
     gap:1rem;
     margin-bottom:2rem;
+    color: var(--text);
 }
 
 .ball  {
@@ -60,6 +69,11 @@ h2{
 .ball2 {
     height:min(8vh,80px);
     animation-delay:0.3s;
+}
+
+html.dark{
+    --background: #121212;
+    --text: #f0f0f0;
 }
 
 </style>

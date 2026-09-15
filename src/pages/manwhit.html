@@ -13,6 +13,8 @@
     <script src="../scripts/statscalc.js"></script>
     <script src="../scripts/pdfGenerator.js"></script>
     <script src="../scripts/ui-components.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
@@ -206,6 +208,8 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             UIC.initImport("sample1", "sample2");
+
+            restoreHistoryInputs();
         });
 
         submit.addEventListener("click",()=>{
@@ -247,6 +251,17 @@
                 r1: r1,
                 r2: r2
             };
+
+            saveHistory(
+                "Mann-Whitney U Test",
+                "src/pages/manwhit.html",
+                {
+                    sample1: sample1,
+                    sample2: sample2,
+                    select: options.value
+                },
+                calc_values
+            );
 
             result.innerHTML = `
             <div style = "height: 9em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
@@ -494,7 +509,7 @@
                             data: [{ x: z, y: 0 }, { x: z, y: maxY }],
                             borderWidth: 3,
                             pointRadius: 0,
-                            borderColor: "rgb(255, 99, 132)"
+                            borderColor: "rgb(10,100,255)"
                         },
                         {
                             label: "P-value Region",

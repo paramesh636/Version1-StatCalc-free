@@ -13,6 +13,8 @@
     <script src="../scripts/statscalc.js"></script>
     <script src="../scripts/pdfGenerator.js"></script>
     <script src="../scripts/ui-components.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -211,6 +213,8 @@
     
             UIC.initImport("y");
 
+            restoreHistoryInputs();
+
             submit.addEventListener("click",()=>{
 
                 ansSteps.innerHTML = ' ';
@@ -249,6 +253,15 @@
 
                 let min = Math.min(...sorted);
                 let max = Math.max(...sorted);
+
+                saveHistory(
+                    "Quartiles and IQR",
+                    "src/pages/quartiles.html",
+                    {
+                        y : data_y
+                    },
+                    calc_values
+                    );
 
                 result.innerHTML = `
                     <div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;

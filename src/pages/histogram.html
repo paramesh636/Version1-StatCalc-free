@@ -12,6 +12,8 @@
     <script src="../scripts/statscalc.js"></script>
     <script src="../scripts/pdfGenerator.js"></script>
     <script src="../scripts/ui-components.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -214,6 +216,8 @@
     
             UIC.initImport("y");
 
+            restoreHistoryInputs();
+
             submit.addEventListener("click",()=>{
 
                 ansSteps.innerHTML = ' ';
@@ -266,6 +270,16 @@
 
                     data_x.push(center);
                 }
+
+                saveHistory(
+                    "Central Tendency",
+                    "src/pages/histogram.html",
+                    {
+                        x : bin_size,
+                        y : data_y
+                    },
+                    calc_values
+                    );
                 
 
                 for(i = 0; i < data_x.length; i++){

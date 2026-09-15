@@ -1,4 +1,4 @@
-// src/pdf-exporter.js
+// src/scripts/pdf-exporter.js
 
 async function generateModularPDF({ title, datasetHTML, resultsHTML, chartCanvasId, stepsHTML }) {
     const parentDoc = window.parent.document;
@@ -6,30 +6,77 @@ async function generateModularPDF({ title, datasetHTML, resultsHTML, chartCanvas
     let printStyle = parentDoc.getElementById("print-style-override");
 
     try {
-        // 1. Inject global print stylesheet if not already present
         if (!printStyle) {
             printStyle = parentDoc.createElement("style");
             printStyle.id = "print-style-override";
-            printStyle.innerHTML = `
-                #print-report {
-                    position: absolute; left: -9999px; top: 0; width: 794px; z-index: -100;
-                }
-                @media print {
-                    body * { visibility: hidden !important; }
-                    #print-report, #print-report * { visibility: visible !important; }
-                    #print-report {
-                        position: absolute !important; left: 0 !important; top: 0 !important;
-                        width: 100% !important; margin: 0 !important; padding: 20px !important;
-                        background: white !important; color: #222 !important;
-                        font-family: Helvetica, Arial, sans-serif !important;
-                        font-size: 16px !important; line-height: 1.6 !important; z-index: 9999 !important;
-                    }
-                    .page-break-before { page-break-before: always !important; }
-                    .report-block, img, h1, h2, h3 { page-break-inside: avoid !important; break-inside: avoid !important; }
-                }
-            `;
             parentDoc.head.appendChild(printStyle);
         }
+
+        printStyle.innerHTML = `
+            #print-report {
+                position: absolute;
+                left: -9999px;
+                top: 0;
+                width: 794px;
+                z-index: -100;
+            }
+
+            @media print {
+
+                /* Make the actual PDF page white */
+                html,
+                body {
+                    background: #ffffff !important;
+                    color: #222222 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                /* Hide the normal calculator UI */
+                body * {
+                    visibility: hidden !important;
+                }
+
+                /* Show only the PDF report */
+                #print-report,
+                #print-report * {
+                    visibility: visible !important;
+                }
+
+                /* PDF report itself */
+                #print-report {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+
+                    margin: 0 !important;
+                    padding: 20px !important;
+
+                    background: #ffffff !important;
+                    color: #222222 !important;
+
+                    font-family: Helvetica, Arial, sans-serif !important;
+                    font-size: 16px !important;
+                    line-height: 1.6 !important;
+
+                    z-index: 9999 !important;
+                }
+
+                .page-break-before {
+                    page-break-before: always !important;
+                }
+
+                .report-block,
+                img,
+                h1,
+                h2,
+                h3 {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                }
+            }
+        `;
 
         // 2. Create or reset container
         if (!printContainer) {

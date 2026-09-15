@@ -417,7 +417,7 @@ body{
 }
 
 
-body.dark {
+html.dark {
     --background: #121212;
     --text: #f0f0f0;
     --shadow: 0 2px 5px #000;

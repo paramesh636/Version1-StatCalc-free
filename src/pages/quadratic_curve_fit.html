@@ -12,6 +12,8 @@
     <script src="../scripts/statscalc.js"></script>
     <script src="../scripts/pdfGenerator.js"></script>
     <script src="../scripts/ui-components.js"></script>
+    <script src="../scripts/theme.js"></script>
+    <script src="../scripts/history.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -268,6 +270,8 @@
     
             UIC.initImport("x", "y");
 
+            restoreHistoryInputs();
+
             submit.addEventListener("click",()=>{
 
                 ansSteps.innerHTML = ' ';
@@ -335,6 +339,16 @@
                     let ans = a*data_x[i]*data_x[i] + b*data_x[i] + c;
                     dataset[i] = ans;
                 }
+
+                saveHistory(
+                    "Quadratic Regression",
+                    "src/pages/quadratic_curve_fit.html",
+                    {
+                        x : data_x,
+                        y : data_y
+                    },
+                    calc_values
+                    );
 
                 steps.style.display = 'block';
 

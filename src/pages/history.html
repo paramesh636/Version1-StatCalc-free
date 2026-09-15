@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>History</title>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script src="../scripts/history.js"></script>
+    <script src="../scripts/theme.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+
+        .history-container {
+            width: 70%;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .history-header {
+            margin-bottom: 25px;
+        }
+
+        .history-header h1 {
+            margin: 0;
+        }
+
+        #historyList {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .history-card {
+            padding: 18px 20px;
+            border: 1px solid var(--text);
+            border-radius: 10px;
+            background: var(--background);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .history-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+        }
+
+        .history-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 14px;
+        }
+
+        .history-card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .history-card-time {
+            font-size: 13px;
+            opacity: 0.6;
+            white-space: nowrap;
+        }
+
+        .history-result {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-top: 12px;
+            border-top: 1px solid #eeeeee;
+        }
+
+        .history-result-row {
+            display: flex;
+            gap: 8px;
+            font-size: 15px;
+        }
+
+        .history-result-key {
+            font-weight: 600;
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 60px 20px;
+            opacity: 0.6;
+        }
+
+        .empty-history i {
+            font-size: 35px;
+            margin-bottom: 12px;
+        }
+
+        .empty-history p {
+            margin: 0;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="history-container">
+
+        <div class="history-header">
+            <h1>History</h1>
+        </div>
+
+        <div id="historyList"></div>
+
+    </div>
+
+
+    <script>
+
+        const historyList = document.getElementById("historyList");
+
+
+        function formatValue(value) {
+
+            if (Array.isArray(value)) {
+                return value.join(", ");
+            }
+
+            if (typeof value === "object" && value !== null) {
+                return JSON.stringify(value);
+            }
+
+            return value;
+        }
+
+
+        function renderHistory() {
+
+            const history = cleanExpiredHistory();
+
+            if (history.length === 0) {
+
+                historyList.innerHTML = `
+                    <div class="empty-history">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <p>No calculations yet.</p>
+                    </div>
+                `;
+
+                return;
+            }
+
+
+            historyList.innerHTML = history
+                .slice()
+                .reverse()
+                .map(entry => {
+
+                    const date =
+                        new Date(entry.timestamp).toLocaleString();
+
+                    const resultHTML =
+                        Object.entries(entry.result || {})
+                            .map(([key, value]) => `
+                                <div class="history-result-row">
+                                    <span class="history-result-key">
+                                        ${key}:
+                                    </span>
+
+                                    <span>
+                                        ${formatValue(value)}
+                                    </span>
+                                </div>
+                            `)
+                            .join("");
+
+
+                    return `
+                        <div class="history-card" data-id="${entry.id}" data-page="${entry.page}">
+
+                            <div class="history-card-header">
+
+                                <div class="history-card-title">
+                                    ${entry.calculator}
+                                </div>
+
+                                <div class="history-card-time">
+                                    ${date}
+                                </div>
+
+                            </div>
+
+                            <div class="history-result">
+                                ${resultHTML}
+                            </div>
+
+                        </div>
+                    `;
+
+                })
+                .join("");
+
+                document.querySelectorAll(".history-card").forEach(card => {
+
+                    card.addEventListener("click", () => {
+
+                        const page = card.dataset.page;
+                        const historyId = card.dataset.id;
+
+                        if (!page || !historyId) {
+                            return;
+                        }
+
+                        setHistoryToRestore(historyId);
+
+                        window.parent.postMessage(
+                            {
+                                type: "loadHistoryPage",
+                                page: page
+                            },
+                            "*"
+                        );
+
+                    });
+
+                });
+        }
+
+
+        renderHistory();
+
+    </script>
+
+</body>
+
+</html>
