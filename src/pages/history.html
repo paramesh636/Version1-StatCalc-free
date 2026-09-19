@@ -103,6 +103,16 @@
             margin: 0;
         }
 
+        #clear{
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+
+        #clear:hover{
+            text-decoration: underline;
+        }
+
     </style>
 
 </head>
@@ -114,6 +124,7 @@
 
         <div class="history-header">
             <h1>History</h1>
+            <button id="clear" style="background: transparent; border: none; cursor: pointer;">Clear History</button>
         </div>
 
         <div id="historyList"></div>
@@ -124,6 +135,7 @@
     <script>
 
         const historyList = document.getElementById("historyList");
+        const clear = document.getElementById("clear");
 
 
         function formatValue(value) {
@@ -138,6 +150,12 @@
 
             return value;
         }
+
+        clear.addEventListener('click',()=>{
+
+            localStorage.removeItem('calculationHistory');
+            renderHistory();
+        });
 
 
         function renderHistory() {
@@ -234,6 +252,8 @@
 
 
         renderHistory();
+
+
 
     </script>
 

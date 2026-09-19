@@ -70,8 +70,8 @@ const UIC = {
         const modal = document.createElement("div");
         modal.style.cssText = `
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            z-index: 10001; min-width: 420px; max-height: 80vh; overflow-y: auto; font-family: monospace; color: #333;
+            background: var(--themegradient); padding: 25px; border-radius: 12px; box-shadow: var(--shadow);
+            z-index: 10001; min-width: 420px; max-height: 80vh; overflow-y: auto; font-family: monospace; color: var(--text);
         `;
 
         let optionsHTML = '';

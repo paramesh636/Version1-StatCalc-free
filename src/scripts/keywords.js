@@ -19,5 +19,6 @@ const keywords = [{topic:'correlation(pearson)',keywords:['correlation','relatio
 				  {topic:'poisson dist.',keywords:['poisson']},
 				  {topic:'mandelbrot set',keywords:['mandelbrot','fun']},
 				  {topic:'logistic regression',keywords:['logistic']},
-				  {topic:'logistic map',keywords:['map']}
+				  {topic:'logistic map',keywords:['map']},
+				  {topic:'anova(one-way)',keywords:['anova','analysis']}
 				   ];

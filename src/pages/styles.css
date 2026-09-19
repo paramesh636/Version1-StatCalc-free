@@ -6,6 +6,7 @@
 	--focus: rgb(230,230,230);
 	--hover: rgb(240,240,240);
 	--themecolor: rgb(10,100,255);
+	--themegradient: white;
 }
 
 
@@ -334,9 +335,8 @@ body{
     bottom: 110%;
     left: 140%;
     transform: translateX(-50%);
-    background: var(--background);
+    background: var(--themegradient);
     color: var(--text);
-    border: 1px solid #ddd;
     border-radius: 10px;
     box-shadow: var(--shadow);
     width: 120px;
@@ -420,11 +420,12 @@ body{
 html.dark {
     --background: #121212;
     --text: #f0f0f0;
-    --shadow: 0 2px 5px #000;
+    --shadow: 0 2px 10px black;
     --darkgrey: #eeeeee;
     --focus: #2a2a2a;
     --hover: #333333;
     --themecolor: rgb(10,100,255);
+    --themegradient: rgb(60,60,60);
 
     color-scheme: dark;
 }

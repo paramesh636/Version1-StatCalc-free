@@ -266,10 +266,10 @@
                 result.innerHTML = `
                     <div style = "height: 6em;display: grid; text-align: center;grid-template-columns: auto auto auto; gap: 0 1em;
                      font-size: 2em; font-family: monospace;">
-                        <span>Q1</span><span>:</span><span>${q1}</span>
-                        <span>Q2</span><span>:</span><span>${median}</span>
-                        <span>Q3</span><span>:</span><span>${q3}</span>
-                        <span>IQR</span><span>:</span><span>${iqr}</span>
+                        <span>Q1</span><span>:</span><span>${q1.toFixed(5)}</span>
+                        <span>Q2</span><span>:</span><span>${median.toFixed(5)}</span>
+                        <span>Q3</span><span>:</span><span>${q3.toFixed(5)}</span>
+                        <span>IQR</span><span>:</span><span>${iqr.toFixed(5)}</span>
                     </div>
                 `;
 
@@ -313,7 +313,7 @@
 
                                 pointRadius: 4,
                                 pointHoverRadius: 2,
-                                backgroundColor: 'green',
+                                backgroundColor: "rgba(231,84,128,0.6)",
                             }
                         ]
                     },

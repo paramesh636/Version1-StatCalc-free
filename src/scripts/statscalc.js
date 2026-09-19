@@ -616,3 +616,170 @@ function renderMandelbrot(ctx, data, width, height, maxIter) {
 
     ctx.putImageData(image, 0, 0);
 }
+
+
+function one_way_anova(groups) {
+
+    if (!Array.isArray(groups) || groups.length < 2) {
+        throw new Error("ANOVA requires at least two groups.");
+    }
+
+    const cleanedGroups = groups.map((group, index) => {
+
+        if (!Array.isArray(group)) {
+            throw new Error(`Group ${index + 1} is not a valid array.`);
+        }
+
+        const values = group
+            .map(Number)
+            .filter(Number.isFinite);
+
+        if (values.length < 2) {
+            throw new Error(
+                `Group ${index + 1} must contain at least 2 valid readings.`
+            );
+        }
+
+        return values;
+    });
+
+    const k = cleanedGroups.length;
+
+    const groupSizes = cleanedGroups.map(group => group.length);
+
+    const n = groupSizes.reduce(
+        (sum, size) => sum + size,
+        0
+    );
+
+    const groupMeans = cleanedGroups.map(group => {
+
+        const sum = group.reduce(
+            (acc, value) => acc + value,
+            0
+        );
+
+        return sum / group.length;
+    });
+
+    const grandTotal = cleanedGroups.reduce(
+        (total, group) =>
+            total +
+            group.reduce(
+                (sum, value) => sum + value,
+                0
+            ),
+        0
+    );
+
+    const grandMean = grandTotal / n;
+    const ssBetween = cleanedGroups.reduce(
+        (sum, group, i) => {
+
+            return sum +
+                group.length *
+                Math.pow(
+                    groupMeans[i] - grandMean,
+                    2
+                );
+
+        },
+        0
+    );
+
+    const ssWithin = cleanedGroups.reduce(
+        (total, group, i) => {
+
+            const groupSS = group.reduce(
+                (sum, value) => {
+
+                    return sum +
+                        Math.pow(
+                            value - groupMeans[i],
+                            2
+                        );
+
+                },
+                0
+            );
+
+            return total + groupSS;
+
+        },
+        0
+    );
+    const ssTotal = ssBetween + ssWithin;
+
+    const dfBetween = k - 1;
+    const dfWithin = n - k;
+    const dfTotal = n - 1;
+
+    const msBetween =
+        ssBetween / dfBetween;
+
+    const msWithin =
+        ssWithin / dfWithin;
+
+    let F;
+
+    if (msWithin === 0) {
+
+        if (msBetween === 0) {
+            F = 0;
+        } else {
+            F = Infinity;
+        }
+
+    } else {
+
+        F = msBetween / msWithin;
+
+    }
+
+    let pValue;
+
+    if (F === Infinity) {
+
+        pValue = 0;
+
+    } else {
+
+        pValue =
+            1 - jStat.centralF.cdf(
+                F,
+                dfBetween,
+                dfWithin
+            );
+
+    }
+
+    pValue = Math.max(
+        0,
+        Math.min(1, pValue)
+    );
+
+    const etaSquared =
+        ssTotal === 0
+            ? 0
+            : ssBetween / ssTotal;
+
+    return {
+        groups: cleanedGroups,
+        group_count: k,
+        total_n: n,
+        group_sizes: groupSizes,
+        group_means: groupMeans,
+        grand_mean: grandMean,
+        ss_between: ssBetween,
+        ss_within: ssWithin,
+        ss_total: ssTotal,
+        df_between: dfBetween,
+        df_within: dfWithin,
+        df_total: dfTotal,
+        ms_between: msBetween,
+        ms_within: msWithin,
+        F: F,
+        p_value: pValue,
+        eta_squared: etaSquared
+    };
+}
