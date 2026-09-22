@@ -1,5 +1,5 @@
 const HISTORY_KEY = "calculationHistory";
-const HISTORY_DURATION = 1000 * 60 * 60 * 48;
+const HISTORY_DURATION = 1000 * 60 * 60 * 24 * 7;
 const RESTORE_KEY = "historyToRestore";
 
 

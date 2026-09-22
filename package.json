@@ -11,8 +11,8 @@
     "build": "electron-builder"
   },
   "build": {
-    "appId": "com.paramesh.statcalc",
-    "productName": "StatCalc",
+    "appId": "com.paramesh.statix",
+    "productName": "Statix",
     "directories": {
       "output": "dist"
     },

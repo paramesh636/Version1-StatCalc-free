@@ -41,7 +41,7 @@
             padding: 18px 20px;
             border: 1px solid var(--text);
             border-radius: 10px;
-            background: var(--background);
+            background: var(--themegradient);
             transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
@@ -153,8 +153,13 @@
 
         clear.addEventListener('click',()=>{
 
-            localStorage.removeItem('calculationHistory');
-            renderHistory();
+            const confirmed = confirm("Each history entry will be automatically cleared after a week of its calculation. Are you sure you want to clear all history now?");
+
+            if(confirmed){
+                localStorage.removeItem('calculationHistory');
+                renderHistory();   
+            }
+            
         });
 
 

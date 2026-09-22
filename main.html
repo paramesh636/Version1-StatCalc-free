@@ -232,7 +232,7 @@ body.dark {
     <div class="dropdown" id="dropdown">
         <a style="cursor:pointer;" id="theme">Dark Theme</a>
         <a style="cursor:pointer;" id="history">History</a>
-        <a href="https://your-purchase-link.com" target="_blank">Support</a>
+        <a href="https://statix-app.pages.dev/" target="_blank">Website</a>
     </div>
 
     <div class="search">
@@ -347,7 +347,7 @@ function applyTheme() {
         pageDocument.documentElement.classList.toggle('dark',darkMode);
     }
 
-    
+    theme.textContent = darkMode ? 'Light Theme' : 'Dark Theme';
 }
 
 
@@ -364,10 +364,6 @@ theme.addEventListener('click', () => {
         );
 
     applyTheme();
-
-    theme.textContent = darkMode
-        ? 'Light Theme'
-        : 'Dark Theme';
 });
 
 

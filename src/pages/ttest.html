@@ -402,7 +402,7 @@
                 calc_values
                 );
 
-            for (let x = -limit; x <= limit; x += 0.05) {
+            for (let x = -limit; x <= limit; x += 0.02) {
                 labels.push(x);
                 curve.push(jStat.studentt.pdf(x, df));
             }
@@ -459,8 +459,8 @@
                             ],
                             borderWidth: 3,
                             pointRadius: 0,
-                            borderColor: "rgb(10,100,255)",
-                            backgroundColor: "rgb(10,100,255)"
+                            borderColor: "orange",
+                            backgroundColor: "orange"
                         },
                         {
                             label: "P-value Region",

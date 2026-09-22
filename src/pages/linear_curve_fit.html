@@ -271,7 +271,7 @@
                     calc_values
                     );
 
-                result.innerHTML = `\\[y = ${a}x + ${b}\\]`;
+                result.innerHTML = `\\[y = ${a.toFixed(5)}x + ${b.toFixed(5)}\\]`;
                 MathJax.typesetPromise();
 
                 let data_xy = data_x.map((x,i)=>({x: x,y: data_y[i]}));

@@ -295,7 +295,7 @@ body{
     right: 0;
     width: 280px;
     padding: 15px;
-    background: var(--background);
+    background: var(--themegradient);
     border-radius: 10px;
     box-shadow: var(--shadow);
     z-index: 1000;
