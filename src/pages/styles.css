@@ -239,14 +239,14 @@ body{
 	position: relative;
 	width: 78.5%;
 	height: 3em;
-	background-color: var(--background);
+	background-color: var(--themegradient);
 	margin-bottom: 30px;
 	margin-left: 10px;
 	padding-left: 10px;
 	padding-right: 100px;
 	border: none;
 	border-radius: 1.5em;
-	box-shadow: 0 2px 5px grey;
+	box-shadow: var(--shadow);
 	font-size: 1em;
 }
 
